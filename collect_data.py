@@ -8,6 +8,7 @@ import datetime
 
 metric_list = ["cpu_report", "network_report"]
 
+#@TODO: add time range
 def collect(gangalia_server, cluster, node_list, output_directory):
 
 	collect_time = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')

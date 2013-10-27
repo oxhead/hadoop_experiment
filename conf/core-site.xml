@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+
+    <property>
+	<name>fs.defaultFS</name>
+	<value>${fs.defaultFS}</value>
+	<final>true</final>
+	<description>Must be slash entailed.</description>
+    </property>
+
+    <property>
+        <name>hadoop.storage</name>
+	<value>${fs.defaultFS}hadoop</value>
+    </property>
+
+    <property>
+        <name>hadoop.runtime.dir</name>
+        <value>/hadoop/chsu6/hadoop_runtime</value>
+    </property>
+
+    <property>
+        <name>hadoop.tmp.dir</name>
+       	<value>${hadoop.runtime.dir}/tmp</value>
+        <final></final>
+        <description></description>
+    </property>
+
+    <property>
+	<name>mapreduce.map.memory.mb</name>
+	<value>1024</value>
+    </property>
+    <property>
+        <name>mapreduce.reduce.memory.mb</name>
+        <value>1024</value>
+    </property>
+    <property>
+    	<name>io.file.buffer.size</name>
+    	<value>${io.file.buffer.size}</value>
+    	<!--<value>131072</value>-->
+    	<!--<value>524288</value>-->
+    </property>
+    <property>
+            <name>fs.local.block.size</name>
+            <value>67108864</value>
+    </property>
+
+</configuration>

@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+
+  <property>
+    <name>yarn.scheduler.flow.flownetwork.period</name>
+    <value>5</value>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.flow.solver</name>
+    <value>/opt/hadoop/conf/cs2</value>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.flow.assignment.model</name>
+    <value>Flow</value>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.flow.flowrate.default</name>
+    <value>2,0,5,20</value>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.flow.flowrate.terasort</name>
+    <value>12.8,0,22,100</value>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.flow.flowrate.wordcount</name>
+    <value>3.2,0,7.6,20</value>
+  </property>  
+
+  <property>
+    <name>yarn.scheduler.flow.flowrate.grep</name>
+    <value>0.28,0,0,1</value>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.flow.flowrate.nodes</name>
+    <value>vclv99:60,vclv13:20</value>
+  </property>
+</configuration>

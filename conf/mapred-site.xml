@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+
+    <property>
+        <name>hadoop.mapreduce.dir</name>
+        <value>${hadoop.runtime.dir}/mapreduce</value>
+    </property>
+    <property>
+        <name>hadoop.history.dir</name>
+        <value>${hadoop.storage}/history</value>
+    </property>
+
+    <property>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
+    </property>
+
+    <property>
+        <name>mapreduce.cluster.temp.dir</name>
+        <value>${hadoop.mapreduce.dir}/tmp</value>
+    </property>
+    <property>
+        <name>mapreduce.cluster.local.dir</name>
+        <value>${hadoop.mapreduce.dir}/local</value>
+        <description>store intermediate data</description>
+    </property>
+
+<!--
+    <property>
+        <name>mapreduce.job.userhistorylocation</name>
+        <value>/hadoop/log/userhistory</value>
+    </property>
+    <property>
+        <name>mapreduce.jobtracker.jobhistory.location</name>
+        <value>/hadoop/history</value>
+    </property>
+    <property>
+        <name>mapreduce.jobtracker.jobhistory.completed.location</name>
+        <value>/hadoop/history/done</value>
+    </property>
+-->
+
+    <property>
+        <name>mapreduce.jobhistory.address</name>
+        <value>0.0.0.0:19889</value>
+    </property>
+    <property>
+        <name>mapreduce.jobhistory.webapp.address</name>
+        <value>0.0.0.0:19888</value>
+    </property>
+    <property>
+        <name>mapreduce.jobhistory.intermediate-done-dir</name>
+        <value>${hadoop.history.dir}/intermediate</value>
+    </property>
+    <property>
+        <name>mapreduce.jobhistory.done-dir</name>
+        <value>${hadoop.history.dir}/done</value>
+    </property> 
+    <property>
+        <name>mapred.map.tasks.speculative.execution</name>
+        <value>false</value>
+    </property>
+    <property>
+        <name>mapreduce.job.maps</name>
+        <value>16</value>
+    </property>
+    <property>
+        <name>mapreduce.job.reduces</name>
+        <value>16</value>
+    </property>
+</configuration>

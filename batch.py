@@ -7,25 +7,30 @@ from time import sleep
 import tempfile
 import datetime
 import time
+from history import *
+from command import *
 
 map_size = 1024
-job_list = ["grep", "wordcount", "terasort", "networkintensive"]
-#job_list = ['terasort']
-#job_list = ['networkintensive']
-#model_list = ["decoupled", "reference"]
-#model_list = ["decoupled"]
-#model_list = ["reference"]
 
-job_input_table = {"grep": "wikipedia_50GB",
-		   "wordcount": "wikipedia_50GB",
-		   "terasort": "terasort_50GB",
-		   "networkintensive": "wikipedia_50GB"}
-#job_input_table = {"terasort": "terasort_1GB"}
+job_input_table = {
+	"grep": "wikipedia_%sGB",
+	"wordcount": "wikipedia_%sGB",
+	"terasort": "terasort_%sGB",
+	"networkintensive": "wikipedia_%sGB"
+}
 
 node_list = ["power3.csc.ncsu.edu",
 	     "power4.csc.ncsu.edu",
     	     "power5.csc.ncsu.edu",
 	     "power6.csc.ncsu.edu"]
+
+ganglia_node_list = [
+	"power2.csc.ncsu.edu",
+	"power3.csc.ncsu.edu",
+	"power4.csc.ncsu.edu",
+	"power5.csc.ncsu.edu",
+	"power6.csc.ncsu.edu",
+]
 
 collect_metric_list = ["cpu", "memory", "network"]
 collect_metric_table = {"cpu": ["cpu_user", "cpu_system", "cpu_wio", "cpu_idle", "cpu_aidle", "cpu_nice"],
@@ -33,30 +38,52 @@ collect_metric_table = {"cpu": ["cpu_user", "cpu_system", "cpu_wio", "cpu_idle",
 			"network": ["bytes_in", "bytes_out"]
 			}
 
-def batch(hadoop_dir, output_dir, nfs="/nfs_power2", model_list=["decoupled"]):
+scheduler_table = {
+	"InMemory": "org.apache.hadoop.yarn.server.resourcemanager.scheduler.im.InMemoryScheduler",
+	"Capacity": "org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler",
+	"Fifo": "org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler",
+	"Fair": "org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler",
+	"Flow": "org.apache.hadoop.yarn.server.resourcemanager.scheduler.flow.FlowScheduler",
+}
+
+def batch(hadoop_dir, output_dir, nfs="/nfs_power2", model_list=["decoupled"], job_list=[], size=1, scheduler="InMemory", slot=48):
 	for model in model_list:
 		for job in job_list:
 
 
 			data_dir = os.path.join(output_dir, model, "data", job)
 			log_dir = os.path.join(output_dir, model, "log")
+
 			log_file = os.path.join(log_dir, "%s.log" % job)
 			execute_command("mkdir -p %s" % data_dir)
 			execute_command("mkdir -p %s" % log_dir)
 
-			intput = "dataset/%s" % job_input_table[job]
-                        output = "output/%s_%s_%s" % (job, job_input_table[job], int(time.time()))
+			intput = "dataset/%s" % (job_input_table[job] % size)
+                        output = "output/%s_%s_%s" % (job, job_input_table[job] % size, int(time.time()))
 
-			switch_model(model=model)
+			clean_environment()
+			switch_model(model=model, scheduler=scheduler, slot=slot)
                 	start_hadoop(model=model)
                 	sleep(60)
 
 			time_start = int(time.time())
 			submit_hadoop_job(job, intput, output, log_file=log_file, model=model, nfs=nfs)
 			time_end = int(time.time())
-			stop_hadoop(model=model)
-
+			
+			sleep(60)
 			collect_data("power1.csc.ncsu.edu", time_start, time_end, data_dir)
+
+			stop_hadoop(model=model)
+			start_history_server("power6.csc.ncsu.edu")
+			sleep(10)
+
+			try:
+				collect_hadoop_data("power6.csc.ncsu.edu", log_dir, "%s/%s/hadoop" % (output_dir, model))
+			except:
+				pass
+
+			stop_history_server("power6.csc.ncsu.edu")
+
 
 def remote_command(host, cmd):
 	remote_cmd = "ssh %s \"%s\"" % (host, cmd)
@@ -67,6 +94,22 @@ def remote_copy(host, dir_from, dir_to):
 	remote_cmd = "scp -r %s:%s/* %s" % (host, dir_from, dir_to)
 	execute_command(remote_cmd)
 
+def collect_hadoop_data(history_server, log_dir, output_dir):
+	execute_command("mkdir -p %s" % output_dir)
+	job_list = []
+	for f in os.listdir(log_dir):
+		if ".log" not in f:
+			continue
+		cmd = Command("grep 'completed successfully' %s/%s | head -n 1 | cut -d' ' -f6" % (log_dir, f))
+		cmd.run()
+		job_id = cmd.output.strip()
+		job_list.append(job_id)
+		file_runtime = os.path.join(output_dir, "runtime_%s.csv" % f.replace(".log", ""))
+		fetch_job_info(history_server, "19888", job_id, file_runtime)
+		file_distribution = os.path.join(output_dir, "distribution_%s.csv" % f.replace(".log", ""))
+		fetch_jobs(history_server, "19888", job_list, file_distribution) 
+		
+
 def collect_data(ganglia_host, time_start, time_end, output_dir):
 	rrds_dir = "/var/lib/ganglia/rrds"
 	cluster_name = "power"
@@ -74,7 +117,7 @@ def collect_data(ganglia_host, time_start, time_end, output_dir):
 	remote_tmp_dir = os.path.join("/tmp", "rrds_%s_%s" % (cluster_name, int(time.time())))
 	# how mnay seconds
 	collect_step = 5
-	for node in node_list:
+	for node in ganglia_node_list:
 		remote_node_dir = os.path.join(remote_tmp_dir, node)
 		remote_command(ganglia_host, "mkdir -p %s" % remote_node_dir)
 		for metric in collect_metric_list:
@@ -86,7 +129,7 @@ def collect_data(ganglia_host, time_start, time_end, output_dir):
 	remote_copy(ganglia_host, remote_tmp_dir, output_dir)
 			
 
-def submit_hadoop_job(job, input, output, pattern="Kinmen.*", model="decoupled", log_file=None, nfs="/nfs_power2"):
+def submit_hadoop_job(job, input, output, pattern="network", model="decoupled", log_file=None, nfs="/nfs_power2"):
 	
 	if "decoupled" in model:
 		input = "file://%s/%s" % (nfs, input)
@@ -108,24 +151,55 @@ def submit_hadoop_job(job, input, output, pattern="Kinmen.*", model="decoupled",
 
 	execute_command(cmd)
 
-def switch_model(model="decoupled"):
+def generate_conf(dir, model="decoupled", scheduler="InMemory", slot=48):
+	mb = slot * 1024 + 512 
+	buffer = 4096
+	fs = ""
+	if "decoupled" in model:
+		fs = "file:///nfs_power2/"
+	else:
+		fs = "hdfs://power6.csc.ncsu.edu:18020/"
+	scheduler_type = scheduler_table[scheduler]
+	prefetch_enabled = "true" if "InMemory" in scheduler_type else "false"
+	
+	cmd = "python2.7 generate_configuration.py -c conf -d %s -p io.file.buffer.size=%s -p yarn.nodemanager.resource.memory-mb=%s -p fs.defaultFS=%s -p yarn.resourcemanager.scheduler.class=%s -p yarn.inmemory.enabled=%s" % (dir, buffer, mb, fs, scheduler_type, prefetch_enabled)
+	execute_command(cmd)
+
+def clean_environment():
+	for node in ganglia_node_list:
+		cmd = "ssh %s sudo sync;sudo bash -c 'echo 3 > /proc/sys/vm/drop_caches'" % (node)
+		execute_command(cmd)
+
+def switch_model(model="decoupled", scheduler="InMemory", slot=48):
 	print "Switch Hadoop model: %s" % model
+	conf_dir = "/tmp/conf_%s" % model
+	generate_conf(conf_dir, model, scheduler, slot)
 	cmd_list = []
 	for node in node_list:
-		cmd = ""
-		if "decoupled" in model:
-			cmd = "ssh %s 'unlink ~/hadoop/conf && ln -s ~/conf_power ~/hadoop/conf'" % node
-		else:
-			cmd = "ssh %s 'unlink ~/hadoop/conf && ln -s ~/conf_power_reference ~/hadoop/conf'" % node
-		cmd_list.append(cmd)
+		cmd_mkdir = "ssh %s mkdir -p ~/hadoop/conf" % (node)
+		cmd_list.append(cmd_mkdir)
+		cmd_cp = "scp -r %s/* %s:~/hadoop/conf" % (conf_dir, node)
+		#cmd_ln = "ssh %s 'unlink ~/hadoop/conf && ln -s ~/conf ~/hadoop/conf'" % node
+		cmd_list.append(cmd_cp)
+		#cmd_list.append(cmd_ln)
 	execute_commands(cmd_list)
+
+def start_history_server(host):
+        print "Start History Server: %s" % host
+        cmd = "~/hadoop/sbin/mr-jobhistory-daemon.sh start historyserver --conf ~/hadoop/conf"
+        execute_command(cmd)
+
+def stop_history_server(host):
+        print "Stop History Server: %s" % host
+        cmd = "~/hadoop/sbin/mr-jobhistory-daemon.sh stop historyserver"
+        execute_command(cmd)
 
 def start_hadoop(model="decoupled"):
 	print "Start Hadoop model: %s" % model
 	if "decoupled" not in model:
 		cmd_dfs = "~/hadoop/sbin/start-dfs.sh"
 		execute_command(cmd_dfs)
-		sleep(1)
+		sleep(60)
 
 	cmd_yarn = "~/hadoop/sbin/start-yarn.sh"
 	execute_command(cmd_yarn)
@@ -160,11 +234,15 @@ def main(argv):
 	parser.add_argument('--nfs', required=True, help="The nfs directory")
         parser.add_argument("-d", '--directory', required=True, help="The output directory")
 	parser.add_argument("--model", action="append", required=True, help="The Hadoop model to run")
+	parser.add_argument("--job", action="append", required=True, help="The Hadoop jobs to run")
+	parser.add_argument("-s", '--size', default="1", help="The job input size(GB)")
+	parser.add_argument("-t", '--scheduler', default="InMemory", choices=scheduler_table.keys(), help="The Hadoop scheduler")
+	parser.add_argument("-n", '--slot', type=int, default=48, help='The number of slots')
 
 
         args = parser.parse_args()
 
-        batch(args.hadoop, args.directory, model_list = args.model, nfs=args.nfs)
+        batch(args.hadoop, args.directory, model_list = args.model, nfs=args.nfs, job_list = args.job, size=args.size, scheduler=args.scheduler, slot=args.slot)
 
 if __name__ == "__main__":
         main(sys.argv[1:])
