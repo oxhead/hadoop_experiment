@@ -13,10 +13,10 @@ from command import *
 map_size = 1024
 
 job_input_table = {
-	"grep": "wikipedia_%sGB",
-	"wordcount": "wikipedia_%sGB",
-	"terasort": "terasort_%sGB",
-	"networkintensive": "wikipedia_%sGB"
+	"grep": "wikipedia_%s",
+	"wordcount": "wikipedia_%s",
+	"terasort": "terasort_%s",
+	"networkintensive": "wikipedia_%s"
 }
 
 node_list = ["power3.csc.ncsu.edu",
@@ -46,13 +46,27 @@ scheduler_table = {
 	"Flow": "org.apache.hadoop.yarn.server.resourcemanager.scheduler.flow.FlowScheduler",
 }
 
+conf_table = {
+	"yarn.inmemory.prefetch.transfer": "True",
+	"io.file.buffer.size": "65536",
+	"yarn.nodemanager.resource.memory-mb": "50000",
+	"yarn.resourcemanager.scheduler.class": scheduler_table["InMemory"],
+	"yarn.inmemory.enabled": "True",
+	"fs.defaultFS": "file:///nfs_power2/", 
+	"mapreduce.job.reduces": "1",
+}
+
+
 def batch(hadoop_dir, output_dir, nfs="/nfs_power2", model_list=["decoupled"], job_list=[], size=1, scheduler="InMemory", slot=48):
 	for model in model_list:
 		for job in job_list:
 
+			now = datetime.datetime.now()
+			now_string = now.strftime("%Y%m%d%H%M")
+			job_output_dir = os.path.join(output_dir, "%s_%s_%s_%s_%s_%s" % (model, slot, scheduler, job, size, now_string))
 
-			data_dir = os.path.join(output_dir, model, "data", job)
-			log_dir = os.path.join(output_dir, model, "log")
+			data_dir = os.path.join(job_output_dir, "data")
+			log_dir = os.path.join(job_output_dir, "log")
 
 			log_file = os.path.join(log_dir, "%s.log" % job)
 			execute_command("mkdir -p %s" % data_dir)
@@ -73,16 +87,16 @@ def batch(hadoop_dir, output_dir, nfs="/nfs_power2", model_list=["decoupled"], j
 			sleep(60)
 			collect_data("power1.csc.ncsu.edu", time_start, time_end, data_dir)
 
-			stop_hadoop(model=model)
 			start_history_server("power6.csc.ncsu.edu")
 			sleep(10)
 
 			try:
-				collect_hadoop_data("power6.csc.ncsu.edu", log_dir, "%s/%s/hadoop" % (output_dir, model))
+				collect_hadoop_data("power6.csc.ncsu.edu", log_dir, "%s/hadoop" % job_output_dir)
 			except:
 				pass
 
 			stop_history_server("power6.csc.ncsu.edu")
+			stop_hadoop(model=model)
 
 
 def remote_command(host, cmd):
@@ -101,8 +115,10 @@ def collect_hadoop_data(history_server, log_dir, output_dir):
 		if ".log" not in f:
 			continue
 		cmd = Command("grep 'completed successfully' %s/%s | head -n 1 | cut -d' ' -f6" % (log_dir, f))
+		#print cmd.command
 		cmd.run()
 		job_id = cmd.output.strip()
+		#print '@@ job id=%s' % job_id
 		job_list.append(job_id)
 		file_runtime = os.path.join(output_dir, "runtime_%s.csv" % f.replace(".log", ""))
 		fetch_job_info(history_server, "19888", job_id, file_runtime)
@@ -153,7 +169,7 @@ def submit_hadoop_job(job, input, output, pattern="network", model="decoupled", 
 
 def generate_conf(dir, model="decoupled", scheduler="InMemory", slot=48):
 	mb = slot * 1024 + 512 
-	buffer = 4096
+	buffer = 65536
 	fs = ""
 	if "decoupled" in model:
 		fs = "file:///nfs_power2/"
@@ -161,13 +177,23 @@ def generate_conf(dir, model="decoupled", scheduler="InMemory", slot=48):
 		fs = "hdfs://power6.csc.ncsu.edu:18020/"
 	scheduler_type = scheduler_table[scheduler]
 	prefetch_enabled = "true" if "InMemory" in scheduler_type else "false"
+
+	conf_table["io.file.buffer.size"] = buffer
+	conf_table["yarn.nodemanager.resource.memory-mb"] = mb
+	conf_table["fs.defaultFS"] = fs
+	conf_table["yarn.resourcemanager.scheduler.class"] = scheduler_type
+	conf_table["yarn.inmemory.enabled"] = prefetch_enabled
+
+	cmd = "python2.7 generate_configuration.py -c conf -d %s" % dir
+	for k, v in conf_table.items():
+		cmd = cmd + " -p %s=%s" % (k, v)
 	
-	cmd = "python2.7 generate_configuration.py -c conf -d %s -p io.file.buffer.size=%s -p yarn.nodemanager.resource.memory-mb=%s -p fs.defaultFS=%s -p yarn.resourcemanager.scheduler.class=%s -p yarn.inmemory.enabled=%s" % (dir, buffer, mb, fs, scheduler_type, prefetch_enabled)
+	#cmd = "python2.7 generate_configuration.py -c conf -d %s -p io.file.buffer.size=%s -p yarn.nodemanager.resource.memory-mb=%s -p fs.defaultFS=%s -p yarn.resourcemanager.scheduler.class=%s -p yarn.inmemory.enabled=%s" % (dir, buffer, mb, fs, scheduler_type, prefetch_enabled)
 	execute_command(cmd)
 
 def clean_environment():
 	for node in ganglia_node_list:
-		cmd = "ssh %s sudo sync;sudo bash -c 'echo 3 > /proc/sys/vm/drop_caches'" % (node)
+		cmd = "ssh %s 'sudo ntpdate pool.ntp.org; sudo sync; echo 3 | sudo tee /proc/sys/vm/drop_caches'" % node
 		execute_command(cmd)
 
 def switch_model(model="decoupled", scheduler="InMemory", slot=48):
@@ -207,11 +233,13 @@ def start_hadoop(model="decoupled"):
 def stop_hadoop(model="decoupled"):
 	print "Stop Hadoop model: %s" % model
 	cmd_list = []
-        if "decoupled" not in model:
+
+        cmd_yarn = "~/hadoop/sbin/stop-yarn.sh"
+
+	if "decoupled" not in model:
                 cmd_dfs = "~/hadoop/sbin/stop-dfs.sh"
                 cmd_list.append(cmd_dfs)
 
-        cmd_yarn = "~/hadoop/sbin/stop-yarn.sh"
         cmd_list.append(cmd_yarn)
 	execute_commands(cmd_list)
 
@@ -235,13 +263,16 @@ def main(argv):
         parser.add_argument("-d", '--directory', required=True, help="The output directory")
 	parser.add_argument("--model", action="append", required=True, help="The Hadoop model to run")
 	parser.add_argument("--job", action="append", required=True, help="The Hadoop jobs to run")
-	parser.add_argument("-s", '--size', default="1", help="The job input size(GB)")
+	parser.add_argument("-s", '--size', default="1", help="The job input size with units, e.g. MB or GB")
 	parser.add_argument("-t", '--scheduler', default="InMemory", choices=scheduler_table.keys(), help="The Hadoop scheduler")
 	parser.add_argument("-n", '--slot', type=int, default=48, help='The number of slots')
-
+	parser.add_argument("--transfer", default="True", help='Enable data transfer')
+	parser.add_argument("--reducer", default="16", help='The number of reducer')
 
         args = parser.parse_args()
 
+	conf_table["yarn.inmemory.prefetch.transfer"] = args.transfer
+	conf_table["mapreduce.job.reduces"] = args.reducer
         batch(args.hadoop, args.directory, model_list = args.model, nfs=args.nfs, job_list = args.job, size=args.size, scheduler=args.scheduler, slot=args.slot)
 
 if __name__ == "__main__":

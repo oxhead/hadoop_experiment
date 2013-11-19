@@ -112,15 +112,15 @@
     </property>
     <property>
     	<name>yarn.inmemory.prefetch.window</name>
-    	<value>48</value>
+    	<value>64</value>
     </property>
     <property>
         <name>yarn.inmemory.prefetch.concurrency</name>
-        <value>48</value>
+        <value>64</value>
     </property>
     <property>
         <name>yarn.inmemory.prefetch.transfer</name>
-        <value>false</value>
+        <value>${yarn.inmemory.prefetch.transfer}</value>
     </property>
     <property>
         <name>yarn.inmemory.prefetch.inputstream.enabled</name>
@@ -128,12 +128,14 @@
     </property>
     <property>
         <name>yarn.inmemory.token.number</name>
-        <value>100</value>
+        <value>50</value>
     </property>
     <property>
         <name>yarn.inmemory.token.size</name>
         <!--<value>1048576</value>-->
-	<value>3145728</value>
+	<!--<value>3145728</value>-->
+	<!--<value>2097152</value>-->
+	<value>4194304</value>
 	<!--<value>67108864</value>-->
     </property>
     <property>

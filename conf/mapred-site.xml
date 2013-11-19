@@ -68,6 +68,6 @@
     </property>
     <property>
         <name>mapreduce.job.reduces</name>
-        <value>16</value>
+        <value>${mapreduce.job.reduces}</value>
     </property>
 </configuration>

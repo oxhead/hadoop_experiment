@@ -26,6 +26,9 @@ def fetch_jobs(host, port, jobs, output_file):
 	reduceEndTime = {}
 	reduceBytes = {}
 
+	map_list = []
+	reduce_list = []
+
 	for job_id in jobs:
 		job_url = "%s/%s" % (job_list_url, job_id)
 		job_json = requests.get(job_url)
@@ -63,6 +66,7 @@ def fetch_jobs(host, port, jobs, output_file):
 				if attempt_type == "MAP":
 					mapStartTime[attempt_id] = int(attempt_startTime)/1000;
 					mapEndTime[attempt_id] = int(attempt_endTime)/1000;
+					map_list.append(attempt_id)
 				elif attempt_type == "REDUCE":
 					attempt_shuffleTime = attempt_json.json()["taskAttempt"]["shuffleFinishTime"]
 					attempt_mergeTime = attempt_json.json()["taskAttempt"]["mergeFinishTime"]
@@ -70,6 +74,7 @@ def fetch_jobs(host, port, jobs, output_file):
                                 	reduceEndTime[attempt_id] = int(attempt_endTime)/1000
 					reduceShuffleTime[attempt_id] = int(attempt_shuffleTime)/1000
 					reduceMergeTime[attempt_id] = int(attempt_mergeTime)/1000
+					reduce_list.append(attempt_id)
 
 	runningMaps = {}
 	shufflingReduces = {}
@@ -94,13 +99,14 @@ def fetch_jobs(host, port, jobs, output_file):
         	for t in range(mapStartTime[mapper], mapEndTime[mapper]):
                 	runningMaps[t] += 1
 	for reducer in reduceStartTime.keys():
-		print reducer
         	for t in range(reduceStartTime[reducer], reduceShuffleTime[reducer]):
                 	shufflingReduces[t] += 1
         	for t in range(reduceShuffleTime[reducer], reduceMergeTime[reducer]):
                		mergingReduces[t] += 1
         	for t in range(reduceMergeTime[reducer], reduceEndTime[reducer]):
                 	runningReduces[t] += 1
+
+	print "Mapper=%s, Reducer=%s" % (len(map_list), len(reduce_list))
 
 	f.write("time,maps,shuffle,merge,reduce\n")
 	for t in range(startTime, endTime):
