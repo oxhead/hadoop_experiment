@@ -57,46 +57,70 @@ conf_table = {
 }
 
 
-def batch(hadoop_dir, output_dir, nfs="/nfs_power2", model_list=["decoupled"], job_list=[], size=1, scheduler="InMemory", slot=48):
+def batch(hadoop_dir, output_dir, nfs="/nfs_power2", model_list=["decoupled"], job_list=[], scheduler="InMemory", slot=48):
 	for model in model_list:
-		for job in job_list:
 
-			now = datetime.datetime.now()
-			now_string = now.strftime("%Y%m%d%H%M")
-			job_output_dir = os.path.join(output_dir, "%s_%s_%s_%s_%s_%s" % (model, slot, scheduler, job, size, now_string))
+		now = datetime.datetime.now()
+		now_string = now.strftime("%Y%m%d%H%M")
+		output_dir = os.path.join(output_dir, "%s_%s_%s_%s" % (model, slot, scheduler, now_string))
 
-			data_dir = os.path.join(job_output_dir, "data")
-			log_dir = os.path.join(job_output_dir, "log")
+		data_dir = os.path.join(output_dir, "data")
+		log_dir = os.path.join(output_dir, "log")
+		execute_command("mkdir -p %s" % data_dir)
+		execute_command("mkdir -p %s" % log_dir)
+		clean_environment()
+                switch_model(model=model, scheduler=scheduler, slot=slot)
+               	start_hadoop(model=model)
+                sleep(60)
 
-			log_file = os.path.join(log_dir, "%s.log" % job)
-			execute_command("mkdir -p %s" % data_dir)
-			execute_command("mkdir -p %s" % log_dir)
+		job_log_list = []
 
-			intput = "dataset/%s" % (job_input_table[job] % size)
-                        output = "output/%s_%s_%s" % (job, job_input_table[job] % size, int(time.time()))
+		time_start = int(time.time())
+		for i in range(len(job_list)):
+			job = job_list[i]
+			job_type = job['type']
+			job_size = job['size']
+			job_reducer = job['reducer']
+			#job_option = job['option']
 
-			clean_environment()
-			switch_model(model=model, scheduler=scheduler, slot=slot)
-                	start_hadoop(model=model)
-                	sleep(60)
+			log_file = os.path.join(log_dir, "%s_%s.log" % (i, job_type))
 
-			time_start = int(time.time())
-			submit_hadoop_job(job, intput, output, log_file=log_file, model=model, nfs=nfs)
-			time_end = int(time.time())
-			
-			sleep(60)
-			collect_data("power1.csc.ncsu.edu", time_start, time_end, data_dir)
+			intput = "dataset/%s" % (job_input_table[job_type] % job_size)
+                        output = "output/%s_%s_%s" % (job_type, job_input_table[job_type] % job_size, int(time.time()))
 
-			start_history_server("power6.csc.ncsu.edu")
+			submit_hadoop_job(job_type, intput, output, numOfReducer = job_reducer, log_file=log_file, model=model, nfs=nfs, async=True)
+			#submit_hadoop_job(job_type, intput, output, numOfReducer = job_reducer, pattern = job_option, log_file=log_file, model=model, nfs=nfs, async=True)
+			sleep(2)
+
+			job_log_list.append(log_file)
+		
+		completion = 0
+		while completion < len(job_log_list):
+			completion = 0
+			for job_log in job_log_list:
+                		cmd = Command("grep 'completed successfully' %s | head -n 1 | cut -d' ' -f6" % job_log)
+                		cmd.run()
+                		job_id = cmd.output.strip()
+				if len(job_id) > 0:
+					print "Complete: %s" % job_log
+					completion = completion + 1
 			sleep(10)
+		
+		time_end = int(time.time())
+			
+		collect_data("power1.csc.ncsu.edu", time_start, time_end, data_dir)
 
-			try:
-				collect_hadoop_data("power6.csc.ncsu.edu", log_dir, "%s/hadoop" % job_output_dir)
-			except:
-				pass
+		start_history_server("power6.csc.ncsu.edu")
+		sleep(10)
+		
+		try:
+			collect_hadoop_data("power6.csc.ncsu.edu", job_log_list, "%s/hadoop" % output_dir)
+		except Exception as e:
+			print e
+			pass
 
-			stop_history_server("power6.csc.ncsu.edu")
-			stop_hadoop(model=model)
+		stop_history_server("power6.csc.ncsu.edu")
+		stop_hadoop(model=model)
 
 
 def remote_command(host, cmd):
@@ -108,22 +132,23 @@ def remote_copy(host, dir_from, dir_to):
 	remote_cmd = "scp -r %s:%s/* %s" % (host, dir_from, dir_to)
 	execute_command(remote_cmd)
 
-def collect_hadoop_data(history_server, log_dir, output_dir):
+def collect_hadoop_data(history_server, job_log_list, output_dir):
 	execute_command("mkdir -p %s" % output_dir)
 	job_list = []
-	for f in os.listdir(log_dir):
-		if ".log" not in f:
-			continue
-		cmd = Command("grep 'completed successfully' %s/%s | head -n 1 | cut -d' ' -f6" % (log_dir, f))
-		#print cmd.command
+	for job_log in job_log_list:
+		print job_log
+		cmd = Command("grep 'completed successfully' %s | head -n 1 | cut -d' ' -f6" % job_log)
 		cmd.run()
-		job_id = cmd.output.strip()
-		#print '@@ job id=%s' % job_id
-		job_list.append(job_id)
-		file_runtime = os.path.join(output_dir, "runtime_%s.csv" % f.replace(".log", ""))
-		fetch_job_info(history_server, "19888", job_id, file_runtime)
-		file_distribution = os.path.join(output_dir, "distribution_%s.csv" % f.replace(".log", ""))
-		fetch_jobs(history_server, "19888", job_list, file_distribution) 
+                job_id = cmd.output.strip()
+                print '@@ job id=%s' % job_id
+		print job_log
+                job_list.append(job_id)
+                file_runtime = os.path.join(output_dir, "runtime_%s.csv" % os.path.basename(job_log).replace(".log", ""))
+		print job_id, file_runtime
+                fetch_job_info(history_server, "19888", job_id, file_runtime)
+
+	file_distribution = os.path.join(output_dir, "timeline.csv")
+	fetch_jobs(history_server, "19888", job_list, file_distribution) 
 		
 
 def collect_data(ganglia_host, time_start, time_end, output_dir):
@@ -145,7 +170,7 @@ def collect_data(ganglia_host, time_start, time_end, output_dir):
 	remote_copy(ganglia_host, remote_tmp_dir, output_dir)
 			
 
-def submit_hadoop_job(job, input, output, pattern="network", model="decoupled", log_file=None, nfs="/nfs_power2"):
+def submit_hadoop_job(job, input, output, numOfReducer=16, pattern="kinmen.*", model="decoupled", log_file=None, nfs="/nfs_power2", async=False):
 	
 	if "decoupled" in model:
 		input = "file://%s/%s" % (nfs, input)
@@ -157,15 +182,18 @@ def submit_hadoop_job(job, input, output, pattern="network", model="decoupled", 
 	cmd = ""
 	log_file = tempfile.NamedTemporaryFile(delete=False) if log_file is None else log_file
 	if job == "grep":
-		cmd = "~/hadoop/bin/hadoop jar ~/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar grep -Dmapreduce.map.memory.mb=%s %s %s %s > %s 2>&1" % (map_size, input, output, pattern, log_file)
+		cmd = "~/hadoop/bin/hadoop jar ~/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar grep -Dmapreduce.map.memory.mb=%s -Dmapreduce.job.reduces=%s %s %s %s > %s 2>&1" % (map_size, numOfReducer, input, output, pattern, log_file)
 	elif job == "wordcount":
-		cmd = "~/hadoop/bin/hadoop jar ~/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar wordcount -Dmapreduce.map.memory.mb=%s %s %s > %s 2>&1" % (map_size, input, output, log_file) 
+		cmd = "~/hadoop/bin/hadoop jar ~/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar wordcount -Dmapreduce.map.memory.mb=%s -Dmapreduce.job.reduces=%s %s %s > %s 2>&1" % (map_size, numOfReducer, input, output, log_file) 
 	elif job == "terasort":
-		cmd = "~/hadoop/bin/hadoop jar ~/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar terasort -Dmapreduce.map.memory.mb=%s %s %s > %s 2>&1" % (map_size, input, output, log_file)
+		cmd = "~/hadoop/bin/hadoop jar ~/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar terasort -Dmapreduce.map.memory.mb=%s -Dmapreduce.job.reduces=%s %s %s > %s 2>&1" % (map_size, numOfReducer, input, output, log_file)
 	elif job == "networkintensive":
-                cmd = "~/hadoop/bin/hadoop jar ~/HadoopBenchmark.jar my.oxhead.hadoop.benchmark.NetworkIntensiveJob -Dmapreduce.map.memory.mb=%s %s %s > %s 2>&1" % (map_size, input, output, log_file)
+                cmd = "~/hadoop/bin/hadoop jar ~/HadoopBenchmark.jar my.oxhead.hadoop.benchmark.NetworkIntensiveJob -Dmapreduce.map.memory.mb=%s -Dmapreduce.job.reduces=%s %s %s > %s 2>&1" % (map_size, numOfReducer, input, output, log_file)
 
-	execute_command(cmd)
+	if async:
+		execute_command_in_background(cmd)
+	else:
+		execute_command(cmd)
 
 def generate_conf(dir, model="decoupled", scheduler="InMemory", slot=48):
 	mb = slot * 1024 + 512 
@@ -251,6 +279,14 @@ def execute_command(cmd):
 	print cmd
 	os.system(cmd)
 
+def create_job_list(job_type_list, size_list, reducer_list, option_list):
+	job_list = []
+	for i in range(len(job_type_list)):
+		job = {"type": job_type_list[i], "size": size_list[i], "reducer": reducer_list[i]}
+		job_list.append(job)
+	return job_list
+		
+
 def main(argv):
 
         input_dir = ''
@@ -262,25 +298,29 @@ def main(argv):
 	parser.add_argument('--nfs', required=True, help="The nfs directory")
         parser.add_argument("-d", '--directory', required=True, help="The output directory")
 	parser.add_argument("--model", action="append", required=True, help="The Hadoop model to run")
-	parser.add_argument("--job", action="append", required=True, help="The Hadoop jobs to run")
-	parser.add_argument("-s", '--size', default="1", help="The job input size with units, e.g. MB or GB")
 	parser.add_argument("-t", '--scheduler', default="InMemory", choices=scheduler_table.keys(), help="The Hadoop scheduler")
 	parser.add_argument("-n", '--slot', type=int, default=48, help='The number of slots')
 	parser.add_argument("--transfer", action='store_true', help='Enable data transfer')
-	parser.add_argument("--reducer", default="16", help='The number of reducer')
 	parser.add_argument("--window", default="48", help='The size of prefetch window')
 	parser.add_argument("--concurrency", default="48", help="The number of concurrent prefeching tasks")
 	parser.add_argument("--pdir", default="/dev/shm/hadoop", help="The location of prefetch blocks")
 
+	group = parser.add_argument_group('job')
+	group.add_argument("--job", action="append", required=True, help="The Hadoop jobs to run")
+	group.add_argument("-s", '--size', action="append", help="The job input size with units, e.g. MB or GB")
+	group.add_argument("--reducer", action="append", help='The number of reducer')
+	group.add_argument("--option", action="append", help='The option for map')
+
         args = parser.parse_args()
+	job_list = create_job_list(args.job, args.size, args.reducer, args.option)
 
 	conf_table["yarn.inmemory.prefetch.transfer"] = str(args.transfer)
-	conf_table["mapreduce.job.reduces"] = args.reducer
+	conf_table["mapreduce.job.reduces"] = "16"
 	conf_table["yarn.inmemory.prefetch.window"] = args.window
 	conf_table["yarn.inmemory.prefetch.concurrency"] = args.concurrency
 	conf_table["yarn.inmemory.prefetch.tasks"] = str(args.slot)
 	conf_table["yarn.inmemory.prefetch.dir"] = args.pdir
-        batch(args.hadoop, args.directory, model_list = args.model, nfs=args.nfs, job_list = args.job, size=args.size, scheduler=args.scheduler, slot=args.slot)
+        batch(args.hadoop, args.directory, model_list = args.model, nfs=args.nfs, job_list = job_list, scheduler=args.scheduler, slot=args.slot)
 
 if __name__ == "__main__":
         main(sys.argv[1:])

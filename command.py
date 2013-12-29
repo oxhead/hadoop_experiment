@@ -7,7 +7,7 @@ import os
 class Command(object):
     def __init__(self, command):
         self.command = command
-    def run(self, shell=True):
+    def run(self, shell=True, background=False):
         import subprocess as sp
         process = sp.Popen(self.command, shell = shell, stdout = sp.PIPE, stderr = sp.PIPE)
         self.pid = process.pid
@@ -38,3 +38,7 @@ def execute_command(cmd):
 	print c.output
 	print c.error
 	return c.output
+
+def execute_command_in_background(cmd):
+	print cmd
+	os.system("%s &" % cmd)

@@ -111,12 +111,20 @@
     	<value>${yarn.inmemory.enabled}</value>
     </property>
     <property>
+        <name>yarn.inmemory.prefetch.dir</name>
+        <value>${yarn.inmemory.prefetch.dir}</value>
+    </property>
+    <property>
     	<name>yarn.inmemory.prefetch.window</name>
-    	<value>64</value>
+    	<value>${yarn.inmemory.prefetch.window}</value>
     </property>
     <property>
         <name>yarn.inmemory.prefetch.concurrency</name>
-        <value>64</value>
+        <value>${yarn.inmemory.prefetch.concurrency}</value>
+    </property>
+    <property>
+        <name>yarn.inmemory.prefetch.tasks</name>
+        <value>${yarn.inmemory.prefetch.tasks}</value>
     </property>
     <property>
         <name>yarn.inmemory.prefetch.transfer</name>
@@ -132,14 +140,14 @@
     </property>
     <property>
         <name>yarn.inmemory.token.size</name>
-        <!--<value>1048576</value>-->
+        <value>1048576</value>
 	<!--<value>3145728</value>-->
 	<!--<value>2097152</value>-->
-	<value>4194304</value>
+	<!--<value>4194304</value>-->
 	<!--<value>67108864</value>-->
     </property>
     <property>
         <name>yarn.inmemory.token.interval</name>
-        <value>1000</value>
+        <value>100</value>
     </property>
 </configuration>
