@@ -28,8 +28,8 @@ export YARN_HOME=$HADOOP_HOME
 export HADOOP_CONF_DIR=$HADOOP_HOME/conf
 export YARN_CONF_DIR=$HADOOP_HOME/conf
 
-export HADOOP_LOG_DIR=/hadoop/chsu6/hadoop_runtime/logs
-export YARN_LOG_DIR=/hadoop/chsu6/hadoop_runtime/yarn/logs
+export HADOOP_LOG_DIR=$ROOT_DIR/hadoop_runtime/logs
+export YARN_LOG_DIR=$ROOT_DIR/hadoop_runtime/yarn/logs
 
 # Set Hadoop-specific environment variables here.
 
@@ -39,7 +39,8 @@ export YARN_LOG_DIR=/hadoop/chsu6/hadoop_runtime/yarn/logs
 # remote nodes.
 
 # The java implementation to use.
-export JAVA_HOME=/opt/ibm/biginsights/jdk
+#export JAVA_HOME=/opt/ibm/biginsights/jdk
+export JAVA_HOME=${JAVA_HOME}
 export HADOOP_CONF_DIR=${HADOOP_CONF_DIR:-"/etc/hadoop"}
 
 # Extra Java CLASSPATH elements.  Automatically insert capacity-scheduler.
