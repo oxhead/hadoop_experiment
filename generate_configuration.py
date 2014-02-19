@@ -7,7 +7,6 @@ from time import sleep
 import tempfile
 import datetime
 import time
-from utils import *
 
 
 configurations = {
