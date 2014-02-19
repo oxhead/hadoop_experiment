@@ -12,7 +12,10 @@ import generate_configuration
 import generate_topology
 
 def deploy(user):
-	parameter = ['hadoop.runtime.dir=/home/%s/hadoop_runtime' % user] 
+	parameter = [
+		'hadoop.runtime.dir=/home/%s/hadoop_runtime' % user,
+		'yarn.scheduler.minimum-allocation-mb=512',
+	] 
 	generate_configuration.generate("conf", "myconf", parameter)
 
 	import load_data

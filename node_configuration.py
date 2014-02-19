@@ -16,20 +16,20 @@ memory = {
 }
 
 slot_size = {
-	'power2.csc.ncsu.edu': '1024',
-        'power3.csc.ncsu.edu': '1024',
-        'power4.csc.ncsu.edu': '1024',
-        'power5.csc.ncsu.edu': '1024',
-	'power6.csc.ncsu.edu': '1024',
-        'bc1b3.csc.ncsu.edu': '1024',
-        'bc1b4.csc.ncsu.edu': '1024',
-        'bc1b5.csc.ncsu.edu': '1024',
-        'bc1b6.csc.ncsu.edu': '1024',
-        'bc1b8.csc.ncsu.edu': '1024',
-        'bc1b9.csc.ncsu.edu': '1014',
-        'bc1b12.csc.ncsu.edu': '1024',
-        'bc1b13.csc.ncsu.edu': '1024',
-	'bc1b14.csc.ncsu.edu': '1024',
+	'power2.csc.ncsu.edu': '512',
+        'power3.csc.ncsu.edu': '512',
+        'power4.csc.ncsu.edu': '512',
+        'power5.csc.ncsu.edu': '512',
+	'power6.csc.ncsu.edu': '512',
+        'bc1b3.csc.ncsu.edu': '512',
+        'bc1b4.csc.ncsu.edu': '512',
+        'bc1b5.csc.ncsu.edu': '512',
+        'bc1b6.csc.ncsu.edu': '512',
+        'bc1b8.csc.ncsu.edu': '512',
+        'bc1b9.csc.ncsu.edu': '512',
+        'bc1b12.csc.ncsu.edu': '512',
+        'bc1b13.csc.ncsu.edu': '512',
+	'bc1b14.csc.ncsu.edu': '512',
 }
 
 jdk_dir = {

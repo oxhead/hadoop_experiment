@@ -2,22 +2,31 @@
 
 import sys
 import os
-
+import subprocess
+from subprocess import call
 
 class Command(object):
-    def __init__(self, command):
-        self.command = command
-    def run(self, shell=True, background=False):
-        import subprocess as sp
-        process = sp.Popen(self.command, shell = shell, stdout = sp.PIPE, stderr = sp.PIPE)
-        self.pid = process.pid
-        self.output, self.error = process.communicate()
-        self.failed = process.returncode
-        return self
-    @property
-    def returncode(self):
-        return self.failed
+	def __init__(self, command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
+        	self.command = command
+        	self.shell = shell
+		self.stdin = stdin
+		self.stdout = stdout
+		self.stderr = stderr
 
+	def run(self, async=False):
+		self.process = subprocess.Popen(self.command, shell=self.shell, stdout=self.stdout, stderr=self.stderr)
+        	self.pid = self.process.pid
+        	self.output, self.error = self.process.communicate()
+		if not async:
+			self.process.wait()
+        	return self
+
+    	def wait(self):
+		self.process.wait()
+
+    	@property
+    	def returncode(self):
+        	return self.process.returncode
 
 def execute_remote_commnad(node, cmd):
         remote_cmd = "ssh %s@%s \"%s\"" % (node.user, node.host, cmd)
@@ -33,11 +42,14 @@ def execute_commands(cmd_list):
 
 def execute_command(cmd):
         #os.system(cmd)
-	c = Command(cmd)
-	c.run()
-	print c.output
-	print c.error
-	return c.output
+	#c = Command(cmd)
+	#c.run()
+	#print c.output
+	#print c.error
+	#return c.output
+	print cmd
+	retcode = call(cmd, shell=True)
+	return retcode
 
 def execute_command_in_background(cmd):
 	print cmd

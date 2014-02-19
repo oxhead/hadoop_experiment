@@ -1,8 +1,13 @@
 # generated dir
 myconf/*
 log/*
+setting/*
+results/*
 
 *.py[cod]
+
+# Temp files
+*.swp
 
 # C extensions
 *.so
