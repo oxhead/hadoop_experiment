@@ -11,11 +11,11 @@ import mylog
 import myinfo
 import mycluster
 
-def run(output_file):
+def run(output_file, iteration):
 	job_list = ["terasort", "wordcount", "grep", "nocomputation"]
 	job_size_list = ["64MB", "128MB", "256MB", "512MB", "1GB", "2GB"]
 	map_size_list = [1024]
-	measure_times = 5
+	measure_times = iteration
 	prefix="job-flow"
 
 	fd = open(output_file, "w+")
@@ -83,8 +83,10 @@ def run(output_file):
 def main(argv):
 	parser = argparse.ArgumentParser(description='Configuration generator')
         parser.add_argument("-o", "--output", required=True, help="The output file")
+	parser.add_argument("-i", "--iteration", type=int, default=3, required=False, help="The number of experiments to run")
+	
 	args = parser.parse_args()
-	run(args.output)
+	run(args.output, args.iteration)
 
 if __name__ == "__main__":
         main(sys.argv[1:])
