@@ -9,18 +9,11 @@ import datetime
 import time
 from command import *
 import generate_configuration
-import generate_topology
 from topology import *
-
-def load():
-	import load_data
-        cluster = generate_topology.generate(load_data.getMapReduceClusterConfig(), load_data.getHDFSClusterConfig())
-        mapreduce = cluster.mapreduce
-        hdfs = cluster.hdfs
-	return cluster
+import mycluster
 
 def service_action(user, service, action):
-	cluster = load()
+	cluster = mycluster.load()
 	hadoop_dir = "~/hadoop"
 	conf_dir = "%s/conf" % hadoop_dir
 	dameon_script = "%s/sbin/hadoop-daemon.sh" % hadoop_dir

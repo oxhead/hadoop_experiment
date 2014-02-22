@@ -1,16 +1,28 @@
 mapreduce = {
-	'ResourceManager': 'power6.csc.ncsu.edu',
+	'ResourceManager': 'bc1b14.csc.ncsu.edu',
 	'NodeManagers': [
-		'power2.csc.ncsu.edu',
-                'power3.csc.ncsu.edu',
-                'power4.csc.ncsu.edu',
-		'power5.csc.ncsu.edu',
+		'bc1b3.csc.ncsu.edu',
+                'bc1b4.csc.ncsu.edu',
+                'bc1b5.csc.ncsu.edu',
+		'bc1b6.csc.ncsu.edu',
+		'bc1b7.csc.ncsu.edu',
+		'bc1b9.csc.ncsu.edu',
+		'bc1b10.csc.ncsu.edu',
+		'bc1b13.csc.ncsu.edu',		
+
 	]
 }
 
 hdfs = {
-	'NameNode': 'power6.csc.ncsu.edu',
+	'NameNode': 'bc1b14.csc.ncsu.edu',
 	'DataNodes': [
-		'power6.csc.ncsu.edu',
+		'bc1b14.csc.ncsu.edu',
 	]
 }
+
+historyserver = {
+	'host': 'bc1b14.csc.ncsu.edu',
+	'port': '19888',
+}
+
+ganglia = "power1.csc.ncsu.edu"

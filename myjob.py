@@ -9,7 +9,6 @@ import datetime
 import time
 from command import *
 import generate_configuration
-import generate_topology
 from topology import *
 from command import Command
 import myinfo
@@ -38,29 +37,31 @@ def convert_unit(size):
 
 def get_job_setting(job=None, map_size=1024, job_size=1024, num_reducers=1, prefix=None, log_dir="log"):
 	now = datetime.datetime.now()
+	prefix = "default" if prefix is None else prefix
 	setting = {}
 	setting['hadoop_dir'] = "~/hadoop"
 	setting['output_dir'] = "/output"
 	setting['log_dir'] = log_dir
 	setting['dataset'] = "/dataset/%s_%s" % ("terasort" if (job is None or ("terasort" in job)) else "wikipedia", lookup_size_name(job_size))	
-	setting['job_id'] = "%s_%s_%s_%s" % (prefix, job, lookup_size_name(job_size), now.strftime("%Y-%m-%d_%H-%M-%S") ) if prefix is not None else "%s_%s_%s" % (job, lookup_size_name(job_size), now.strftime("%Y-%m-%d_%H-%M-%S") )
+	setting['job'] = job
+	setting['job_id'] = "%s_%s_%s_%s" % (prefix, job, lookup_size_name(job_size), now.strftime("%Y%m%d%H%M%S") )
 	setting['job_output'] = "%s/%s" % (setting['output_dir'], setting['job_id'])
 	setting['job_log'] = "%s/%s.log" % (setting['log_dir'], setting['job_id'])
 	setting['job_returncode'] = "%s/%s.returncode" % (setting['log_dir'], setting['job_id'])
 	setting['map_size'] = map_size
 	return setting
 
-def generate_command(job, setting):
+def generate_command(setting):
 	cmd = None
 
-        if "wordcount" == job:
+        if "wordcount" == setting['job']:
                 cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar wordcount -Dmapreduce.job.reduces=1 -Dmapreduce.map.memory.mb=%s %s %s > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['map_size'], setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
-        elif "grep" == job:
+        elif "grep" == setting['job']:
                 pattern = "hadoop"
                 cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar grep -Dmapreduce.job.reduces=1 -Dmapreduce.map.memory.mb=%s %s %s \"%s\" > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['map_size'], setting['dataset'], setting['job_output'], pattern, setting['job_log'], setting['job_returncode'])
-        elif "terasort" == job:
+        elif "terasort" == setting['job']:
                 cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar terasort -Dmapreduce.job.reduces=1 -Dmapreduce.map.memory.mb=%s %s %s > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['map_size'], setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
-        elif "nocomputation" == job:
+        elif "nocomputation" == setting['job']:
                 cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar custommap -Dmapreduce.job.reduces=1 -Dmapreduce.map.memory.mb=%s %s %s 0 1 1 1024 > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['map_size'], setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
 
 	return cmd
@@ -70,36 +71,35 @@ def submit_custom(command, task_log):
 	job_ids = mylog.lookup_job_ids(task_log)
 	return job_ids
 
-def submit_async(job, map_size=2048, job_size=64, num_reducers=1, log_dir="log", prefix=None):
-	setting = get_job_setting(job=job, job_size=job_size, map_size=map_size, num_reducers=num_reducers, prefix=prefix, log_dir=log_dir)
-        cmd = generate_command(job, setting)
+def submit_async(setting):
+        cmd = generate_command(setting)
         print cmd
-
+	os.system("mkdir -p %s" % setting['log_dir'])
 	os.system(" (%s) &" % cmd)
-
 	return setting
 		
-def submit(job, map_size=2048, job_size=64, num_reducers=1, log_dir="log", prefix=None):
-	setting = get_job_setting(job=job, job_size=job_size, map_size=map_size, num_reducers=num_reducers, prefix=prefix, log_dir=log_dir)
-	cmd = generate_command(job, setting)
+def submit(setting):
+	cmd = generate_command(setting)	
 	print cmd
-
+	os.system("mkdir -p %s" % setting['log_dir'])
 	Command(cmd).run()
-
 	return setting
 
-	# job_ids = mylog.lookup_job_ids(setting['job_log'])
-	# return job_ids
+def submit_multiple(setting_list):
+	for setting in setting_list:
+		submit_async(setting)
+	wait_completion(setting_list)
 
-def wait_completion(returncode_list):
+def wait_completion(setting_list):
 	while True:
         	all_pass = True
-                for job in returncode_list:
-                	if not os.path.exists(job):
+                for setting in setting_list:
+                	if not os.path.exists(setting['job_returncode']):
                         	all_pass = False
                 if all_pass:
                 	break
                 sleep(1)
+
 def clean_job(setting):
 	cmd = "%s/bin/hadoop dfs -rm -r %s" % (setting['hadoop_dir'], setting['job_output'])
 	Command(cmd).run()

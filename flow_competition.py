@@ -36,9 +36,11 @@ def run(output_file, iteration):
 			(job_1, job_2) = jobs
 			print "Run %s+%s, job_size=%s, map_size=%s" % (job_1, job_2, job_size, map_size)
 			real_size = myjob.convert_unit(job_size)
-			setting_1 = myjob.submit_async(job_1, map_size=map_size, job_size=real_size, num_reducers=1, prefix="%s-1" % prefix)
-			setting_2 = myjob.submit_async(job_2, map_size=map_size, job_size=real_size, num_reducers=1, prefix="%s-2" % prefix)
-			myjob.wait_completion([setting_1['job_returncode'], setting_2['job_returncode']])
+			setting_1 = myjob.get_job_setting(job_1, map_size=map_size, job_size=real_size, num_reducers=1, prefix="%s-1" % prefix)
+			setting_2 = myjob.get_job_setting(job_2, map_size=map_size, job_size=real_size, num_reducers=1, prefix="%s-2" % prefix)
+			setting_list = [setting_1, setting_2]
+			myjob.submit_multiple(setting_list)
+			myjob.wait_completion(setting_list)
         		job_id_1 = mylog.lookup_job_ids(setting_1['job_log'])[0]
 			job_id_2 = mylog.lookup_job_ids(setting_2['job_log'])[0]
 			job_ids = [job_id_1, job_id_2]
@@ -48,7 +50,7 @@ def run(output_file, iteration):
 			for job_id in job_ids:
 				job = job_1 if job_id == job_id_1 else job_2
 				cluster = mycluster.load()
-                		(map_task_list, reduce_task_list) = myinfo.get_task_list(cluster.mapreduce.getResourceManager().host, "19888", job_id)
+                		(map_task_list, reduce_task_list) = myinfo.get_task_list(job_id)
 
 				map_flow_in = []
 				map_flow_out = []
@@ -57,13 +59,13 @@ def run(output_file, iteration):
 				reduce_flow_out = []
 				reduce_elapsed_time = []
                 		for map_task_id in map_task_list:
-          	    	          	task_detail = myinfo.get_task_flow_detail(cluster.mapreduce.getResourceManager().host, "19888", job_id, map_task_id)
+          	    	          	task_detail = myinfo.get_task_flow_detail(job_id, map_task_id)
 					map_flow_in.append(task_detail['flow_in'])
 					map_flow_out.append(task_detail['flow_out'])
 					map_elapsed_time.append(task_detail['elapsed_time'])
 				
                 		for reduce_task_id in reduce_task_list:
-                        		task_detail = myinfo.get_task_flow_detail(cluster.mapreduce.getResourceManager().host, "19888", job_id, reduce_task_id)
+                        		task_detail = myinfo.get_task_flow_detail(job_id, reduce_task_id)
 					reduce_flow_in.append(task_detail['flow_in'])
                                         reduce_flow_out.append(task_detail['flow_out'])
                                         reduce_elapsed_time.append(task_detail['elapsed_time'])	

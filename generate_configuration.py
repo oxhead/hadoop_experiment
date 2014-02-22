@@ -8,6 +8,10 @@ import tempfile
 import datetime
 import time
 from command import *
+import mycluster
+from node_configuration import memory as memory_config
+from node_configuration import slot_size as slot_size_config
+from node_configuration import jdk_dir as jdk_dir_config
 
 
 configurations = {
@@ -25,15 +29,9 @@ def update_configuration(key, value):
 	configurations[key] = value
 
 def generate(conf_dir, output_dir, parameter_list):
-	# load cofig data from files
-	import load_data
-	import generate_topology
-	cluster = generate_topology.generate(load_data.getMapReduceClusterConfig(), load_data.getHDFSClusterConfig())
+	cluster = mycluster.load()
 	mapreduce = cluster.mapreduce 
 	hdfs = cluster.hdfs
-	memory_config = load_data.getMemoryConfig()
-	slot_size_config = load_data.getSlotSizeConfig()
-	jdk_dir_config = load_data.getJDKDirConfi()
 
 	# set up YARN server
 	update_configuration('yarn.resourcemanager.hostname', mapreduce.getResourceManager().host)

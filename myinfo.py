@@ -2,9 +2,14 @@
 
 import sys, argparse, requests, json
 import mylog
+import mycluster
+from node_list import historyserver
+
+historyserver_host = historyserver['host']
+historyserver_port = historyserver['port']
 
 # only at task level, but not task attempt level
-def get_task_counters(historyserver_host, historyserver_port, job_id, task_id):
+def get_task_counters(job_id, task_id):
 	task_url = "http://%s:%s/ws/v1/history/mapreduce/jobs/%s/tasks/%s" % (historyserver_host, historyserver_port, job_id, task_id);
         task_json_response = requests.get(task_url)
         task_json = task_json_response.json()
@@ -45,8 +50,9 @@ def get_task_counters(historyserver_host, historyserver_port, job_id, task_id):
 
 	return counters
 
-def get_task_list(historyserver_host, historyserver_port, job_id):
+def get_task_list(job_id):
 	tasks_url = "http://%s:%s/ws/v1/history/mapreduce/jobs/%s/tasks" % (historyserver_host, historyserver_port, job_id);
+	print tasks_url
         tasks_json_response = requests.get(tasks_url)
         tasks_json = tasks_json_response.json()
 
@@ -60,19 +66,19 @@ def get_task_list(historyserver_host, historyserver_port, job_id):
 				reduce_task_list.append(task['id'])
 	return (map_task_list, reduce_task_list)
 
-def get_task_detail(historyserver_host, historyserver_port, job_id, task_id):
-	task_detail = get_task_counters(historyserver_host, historyserver_port, job_id, task_id)
+def get_task_detail(job_id, task_id):
+	task_detail = get_task_counters(job_id, task_id)
 	return task_detail
 
-def get_task_details(historyserver_host, historyserver_port, job_id):
+def get_task_details(job_id):
 	task_id = job_id.replace("job_", "task_")
 	map_task_id = task_id + "_m_00000"
 	reduce_task_id = task_id + "_r_00000"
-	map_task_details = get_task_counters(historyserver_host, historyserver_port, job_id, map_task_id)
-	reduce_task_details = get_task_counters(historyserver_host, historyserver_port, job_id, reduce_task_id)
+	map_task_details = get_task_counters(job_id, map_task_id)
+	reduce_task_details = get_task_counters(job_id, reduce_task_id)
 	return (map_task_details, reduce_task_details)
 
-def get_job_detail(historyserver_host, historyserver_port, job_id):
+def get_job_detail(job_id):
 	job_url = "http://%s:%s/ws/v1/history/mapreduce/jobs/%s" % (historyserver_host, historyserver_port, job_id);
         job_json_response = requests.get(job_url)
         job_json = job_json_response.json()
@@ -84,23 +90,23 @@ def get_job_detail(historyserver_host, historyserver_port, job_id):
         counters['finishTime'] = job_json["job"]["finishTime"]
 	return counters
 
-def get_job_elapsed_time(historyserver_host, historyserver_port, job_id):
-	job_detail = get_job_detail(historyserver_host, historyserver_port, job_id)
+def get_job_elapsed_time(job_id):
+	job_detail = get_job_detail(job_id)
 	return job_detail['finishTime'] - job_detail['startTime']	
 
-def get_elapsed_time(historyserver_host, historyserver_port, job_id_list):
+def get_elapsed_time(job_id_list):
 	start_time = sys.maxint
 	finish_time = -1
 	for job_id in job_id_list:
-		job_detail = get_job_detail(historyserver_host, historyserver_port, job_id)
+		job_detail = get_job_detail(job_id)
 		start_time = job_detail['startTime'] if job_detail['startTime'] < start_time else start_time
 		finish_time = job_detail['finishTime'] if job_detail['finishTime'] > finish_time else finish_time
 	return (start_time, finish_time)
 
 	
 
-def print_flow_detail(historyserver_host, historyserver_port, job_id):
-        (map_task_detail, reduce_task_detail) = get_task_details(historyserver_host, historyserver_port, job_id)
+def print_flow_detail(job_id):
+        (map_task_detail, reduce_task_detail) = get_task_details(job_id)
         elapsed_map_time = int(map_task_detail['finishTime']) - int(map_task_detail['startTime'])
         elapsed_reduce_time = int(reduce_task_detail['finishTime']) - int(reduce_task_detail['startTime'])
         map_input_size = int(map_task_detail['BYTES_READ'])
@@ -120,8 +126,8 @@ def print_task_flow_detail(task_detail):
         print "average %s flow-in demand: %s MB/s" % (task_detail['type'].lower(), task_detail['flow_in'])
         print "average %s flow-out demand: %s MB/s" % (task_detail['type'].lower(), task_detail['flow_out'])
 
-def get_task_flow_detail(historyserver_host, historyserver_port, job_id, task_id):
-	task_detail = get_task_detail(historyserver_host, historyserver_port, job_id, task_id)
+def get_task_flow_detail(job_id, task_id):
+	task_detail = get_task_detail(job_id, task_id)
         elapsed_task_time = int(task_detail['finishTime']) - int(task_detail['startTime'])
 	task_detail['elapsed_time'] = elapsed_task_time / 1000.0
         if task_detail['type'] == "MAP":

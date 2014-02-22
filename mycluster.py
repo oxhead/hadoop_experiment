@@ -1,7 +1,22 @@
-import generate_topology
-import load_data
+import node_list as data
+from topology import *
+
 def load():
-        cluster = generate_topology.generate(load_data.getMapReduceClusterConfig(), load_data.getHDFSClusterConfig())
-        mapreduce = cluster.mapreduce
-        hdfs = cluster.hdfs
+        cluster_mapreduce = MapReduceCluster()
+        cluster_mapreduce.setResourceManager(Node(data.mapreduce['ResourceManager']))
+        for host in data.mapreduce['NodeManagers']:
+                cluster_mapreduce.addNodeManager(Node(host))
+
+        cluster_hdfs = HDFSCluster()
+        cluster_hdfs.setNameNode(Node(data.hdfs['NameNode']))
+        for host in data.hdfs['DataNodes']:
+                cluster_hdfs.addDataNode(Node(host))
+        cluster = Cluster()
+
+	cluster_ganglia = Node(data.ganglia)
+
+        cluster.mapreduce = cluster_mapreduce
+        cluster.hdfs = cluster_hdfs
+	cluster.ganglia = cluster_ganglia
         return cluster
+

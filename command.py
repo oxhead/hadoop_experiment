@@ -28,7 +28,7 @@ class Command(object):
     	def returncode(self):
         	return self.process.returncode
 
-def execute_remote_commnad(node, cmd):
+def execute_remote_command(node, cmd):
         remote_cmd = "ssh %s@%s \"%s\"" % (node.user, node.host, cmd)
         execute_command(remote_cmd)	
 

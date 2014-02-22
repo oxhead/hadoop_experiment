@@ -7,9 +7,9 @@ from time import sleep
 import tempfile
 import datetime
 import time
-from utils import *
 import generate_configuration
-import generate_topology
+from command import *
+import mycluster
 
 def deploy(user):
 	parameter = [
@@ -18,8 +18,7 @@ def deploy(user):
 	] 
 	generate_configuration.generate("conf", "myconf", parameter)
 
-	import load_data
-        cluster = generate_topology.generate(load_data.getMapReduceClusterConfig(), load_data.getHDFSClusterConfig())
+	cluster = mycluster.load()
         mapreduce = cluster.mapreduce
         hdfs = cluster.hdfs
 

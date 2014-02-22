@@ -9,7 +9,6 @@ import datetime
 import time
 from command import *
 import generate_configuration
-import generate_topology
 from topology import *
 from command import Command
 import myinfo
