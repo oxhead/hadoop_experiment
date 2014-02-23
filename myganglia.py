@@ -47,16 +47,16 @@ def collect(output_dir, time_start=None, time_end=None):
 				print cmd
                                 os.system(cmd)
                         else:
-				current_time_start = time_start
+				current_time_end = time_end
 				report_duration = 30*60
 				num_split = (time_end - time_start)/report_duration + 1
-				for i in range(num_split):
+				for i in reversed(range(num_split)):
                                         export_file_split = os.path.join(export_dir, "%s_%s_%s.csv" % (node_host, metric, str(i)))
-                                        current_time_end = current_time_start + report_duration
+                                        current_time_start = current_time_end - report_duration
                                         cmd = "curl --silent 'http://%s/ganglia2/graph.php?c=%s&h=%s&n=1&v=&m=%s&cs=%s&ce=%s&csv=1&step=1&r=hour' > %s" % (ganglia_server, node_cluster, node_host, metric, str(current_time_start), str(current_time_end), export_file_split)
 					print cmd
 					os.system(cmd)
-					current_time_start = current_time_end
+					current_time_end = current_time_start
 
 def collect_native(output_dir, time_start=None, time_end=None):
         rrds_dir = "/var/lib/ganglia/rrds"

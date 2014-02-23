@@ -13,7 +13,8 @@ import myinfo
 import myganglia
 
 def run(output_file, measure_times, num_nodes):
-	job_list = ["terasort", "wordcount", "grep", "nocomputation"]
+	#job_list = ["terasort", "wordcount", "grep", "nocomputation"]
+	job_list = ["nocomputation"]
 	job_size_list = ["1GB"]
 	map_size_list = [1024]
 	prefix="job-flow"
@@ -45,7 +46,7 @@ def run(output_file, measure_times, num_nodes):
 			myjob.wait_completion(setting_list)
 
 			time_end = int(time.time())
-			myganglia.collect("download/%s_%s_%s" % (prefix, job, str(i)))
+			myganglia.collect("download/%s_%s_%s" % (prefix, job, str(i)), time_start, time_end)
 
 			# make time or historyserver to be ready
 			sleep(5)
