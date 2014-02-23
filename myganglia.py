@@ -10,10 +10,11 @@ import mycluster
 from command import *
 
 metric_list = [
-        "cpu_report", "network_report",
+        "cpu_report", "mem_report", "network_report",
         "cpu_user", "cpu_system", "cpu_wio", "cpu_idle", "cpu_aidle", "cpu_nice",
         "mem_free", "mem_cached", "mem_buffers", "mem_shared",
         "bytes_in", "bytes_out",
+	"load_one",
 ]
 collect_metric_list = ["cpu", "memory", "network"]
 collect_metric_table = {"cpu": ["cpu_user", "cpu_system", "cpu_wio", "cpu_idle", "cpu_aidle", "cpu_nice"],
@@ -27,8 +28,7 @@ def collect(output_dir, time_start=None, time_end=None):
         cluster = mycluster.load()
         ganglia_server = cluster.ganglia.host
 
-        collect_time = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
-        export_dir = os.path.join(output_dir, collect_time)
+        export_dir = output_dir
         os.system("mkdir -p %s" % export_dir)
 
         node_list = []
@@ -47,12 +47,16 @@ def collect(output_dir, time_start=None, time_end=None):
 				print cmd
                                 os.system(cmd)
                         else:
-                                i = 2
-                                for i in range(2):
-                                        export_file_real = os.path.join(export_dir, "%s_%s_%s.csv" % (node_host, metric, str(i)))
-                                        time_start_real = time_start - 60*60*i
-                                        time_end_real = time_end - 60*60*i
-                                        cmd = "curl --silent 'http://%s/ganglia2/graph.php?c=%s&h=%s&n=1&v=&m=%s&cs=%s&ce=%s&csv=1&step=1' > %s" % (ganglia_server, node_cluster, node_host, metric, str(time_start_real), str(time_end_real), export_file_real)
+				current_time_start = time_start
+				report_duration = 30*60
+				num_split = (time_end - time_start)/report_duration + 1
+				for i in range(num_split):
+                                        export_file_split = os.path.join(export_dir, "%s_%s_%s.csv" % (node_host, metric, str(i)))
+                                        current_time_end = current_time_start + report_duration
+                                        cmd = "curl --silent 'http://%s/ganglia2/graph.php?c=%s&h=%s&n=1&v=&m=%s&cs=%s&ce=%s&csv=1&step=1&r=hour' > %s" % (ganglia_server, node_cluster, node_host, metric, str(current_time_start), str(current_time_end), export_file_split)
+					print cmd
+					os.system(cmd)
+					current_time_start = current_time_end
 
 def collect_native(output_dir, time_start=None, time_end=None):
         rrds_dir = "/var/lib/ganglia/rrds"
@@ -115,7 +119,8 @@ def main(argv):
         #args = parser.parse_args()
 
         #collect(args.ganglia, args.cluster, args.node, args.directory)
-        collect("download")
+        collect("download", int(time.time()) - int(60*60*1.5), int(time.time()))
+	print int(time.time()) - int(60*60*1.5), int(time.time())
         #collect_native("download")
 
 if __name__ == "__main__":

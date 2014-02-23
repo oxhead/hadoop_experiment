@@ -3,6 +3,7 @@ myconf/*
 log/*
 setting/*
 results/*
+download/*
 
 *.py[cod]
 
