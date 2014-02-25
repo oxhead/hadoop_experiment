@@ -13,8 +13,7 @@ import myinfo
 import myganglia
 
 def run(output_file, measure_times, num_nodes):
-	#job_list = ["terasort", "wordcount", "grep", "nocomputation"]
-	job_list = ["nocomputation"]
+	job_list = ["terasort", "wordcount", "grep", "nocomputation"]
 	job_size_list = ["1GB"]
 	map_size_list = [1024]
 	prefix="job-flow"

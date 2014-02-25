@@ -21,7 +21,12 @@ def service_action(user, service, action):
 	mapreduce_script = "%s/bin/mapred" % hadoop_dir
 	hdfs_script = "%s/bin/hdfs" % hadoop_dir
 	
-	if service == "mapreduce":
+	if service == "all":
+		service_list = ["historyserver", "mapreduce", "hdfs"]
+		for service in service_list:
+			service_action(user, service, action)
+		return
+	elif service == "mapreduce":
 		if action == "start":
 			# start/stop ResourceManager
 			execute_command("ssh %s@%s %s --config %s --script %s %s resourcemanager" % (user, cluster.mapreduce.getResourceManager().host, dameon_script, conf_dir, yarn_script, action) )
@@ -55,7 +60,7 @@ def main(argv):
 	parser = argparse.ArgumentParser(description='Configuration generator')
 	parser.add_argument("-u", "--user", required=True, help="The user to deploy")
 	parser.add_argument('action', choices=['start', 'stop', 'format'])
-	parser.add_argument('service', choices=['mapreduce', 'hdfs', 'historyserver'])
+	parser.add_argument('service', choices=['mapreduce', 'hdfs', 'historyserver', 'all'])
 
 	args = parser.parse_args()
 	service_action(args.user, args.service, args.action)

@@ -12,7 +12,8 @@ from command import Command
 import myjob
 
 def prepare(user, data_type, dataset_dir=None):
-	size_list = ["64MB", "128MB", "256MB", "512MB", "1GB", "2GB", "4GB"]
+	#size_list = ["64MB", "128MB", "256MB", "512MB", "1GB", "2GB", "4GB"]
+	size_list = ["2GB", "4GB"]
 	dataset_dir = "/home/%s/dataset" % user if dataset_dir is None else dataset_dir
 	hadoop_dir = "/home/%s/hadoop" % user
 	if data_type == "wikipedia":
