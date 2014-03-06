@@ -9,7 +9,7 @@ def fetch_history(host, port, time_start, time_end, output_file):
 	jobs = job_list_json.json()["jobs"]["job"]
 	job_list = []
 	for job in jobs:
-		if job["state" == "SUCCEEDED"]:
+		if job["state"] == "SUCCEEDED":
 			job_list.append(job["id"])
 	
 	fetch_jobs(host, port, job_list, output_file)
@@ -31,9 +31,14 @@ def fetch_jobs(host, port, jobs, output_file):
 
 	for job_id in jobs:
 		job_url = "%s/%s" % (job_list_url, job_id)
+		print job_url
 		job_json = requests.get(job_url)
 		#print job_json.json()
-		job = job_json.json()["job"]
+		try:
+			job = job_json.json()["job"]
+		except:
+			print "Error", job_id
+			continue
 		
 		if job["state"] != "SUCCEEDED":
 			continue
