@@ -14,7 +14,8 @@ from command import Command
 import myinfo
 
 def lookup_job_ids(job_log):
-	job_ids = Command("grep 'mapreduce.Job: Running job:' %s | tr -s ' ' | cut -d' ' -f7" % job_log).run().output.strip()
+	#job_ids = Command("grep 'mapreduce.Job: Running job:' %s | tr -s ' ' | cut -d' ' -f7" % job_log).run().output.strip()
+	job_ids = Command("grep 'completed successfully' %s | tr -s ' ' | cut -d ' ' -f6" % job_log).run().output.strip()
 	return job_ids.split("\n")
 
 def main(argv):

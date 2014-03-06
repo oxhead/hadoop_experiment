@@ -20,3 +20,14 @@ def load():
 	cluster.ganglia = cluster_ganglia
         return cluster
 
+def get_node_list():
+	cluster = load()
+	node_list = []
+	node_list.append(cluster.mapreduce.getResourceManager().host)
+	for node in cluster.mapreduce.getNodeManagers():
+		node_list.append(node.host)
+	node_list.append(cluster.hdfs.getNameNode().host)
+	for node in cluster.hdfs.getDataNodes():
+		node_list.append(node.host)
+	return set(node_list)
+

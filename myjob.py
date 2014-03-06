@@ -14,13 +14,6 @@ from command import Command
 import myinfo
 import mylog
 
-supported_jobs = [
-	'wordcount',
-	'grep',
-	'terasort',
-	'custommap',
-]
-
 def lookup_size_name(job_size):
 	if job_size < 1024:
 		return "%sMB" % job_size
@@ -35,35 +28,56 @@ def convert_unit(size):
         elif "GB" in size:
                 return int(size.replace("GB", "")) * 1024
 
-def get_job_setting(job=None, map_size=1024, job_size=1024, num_reducers=1, prefix=None, log_dir="log"):
+def lookup_dataset(job, job_size):
+	dataset = ""
+	if job == "terasort":
+		dataset = "terasort"
+	elif job == "classification":
+		dataset = "kmeans"
+	else:
+		dataset = "wikipedia"
+	return "/dataset/%s_%s" % (dataset, lookup_size_name(job_size))
+
+def get_job_setting(job=None, job_params=None, map_size=1024, job_size=1024, num_reducers=1, prefix=None, log_dir="log"):
 	now = datetime.datetime.now()
 	prefix = "default" if prefix is None else prefix
 	setting = {}
 	setting['hadoop_dir'] = "~/hadoop"
 	setting['output_dir'] = "/output"
 	setting['log_dir'] = log_dir
-	setting['dataset'] = "/dataset/%s_%s" % ("terasort" if (job is None or ("terasort" in job)) else "wikipedia", lookup_size_name(job_size))	
+	setting['dataset'] = lookup_dataset(job, job_size)
 	setting['job'] = job
 	setting['job_id'] = "%s_%s_%s_%s" % (prefix, job, lookup_size_name(job_size), now.strftime("%Y%m%d%H%M%S") )
+	setting['job_size'] = job_size
+	setting['job_params'] = job_params
 	setting['job_output'] = "%s/%s" % (setting['output_dir'], setting['job_id'])
 	setting['job_log'] = "%s/%s.log" % (setting['log_dir'], setting['job_id'])
 	setting['job_returncode'] = "%s/%s.returncode" % (setting['log_dir'], setting['job_id'])
 	setting['map_size'] = map_size
+	setting['num_reducers'] = num_reducers
 	return setting
 
 def generate_command(setting):
 	cmd = None
 
         if "wordcount" == setting['job']:
-                cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar wordcount -Dmapreduce.job.reduces=1 -Dmapreduce.map.memory.mb=%s %s %s > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['map_size'], setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
+                cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar wordcount -Dmapreduce.job.reduces=%s -Dmapreduce.map.memory.mb=%s %s %s > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['num_reducers'], setting['map_size'], setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
         elif "grep" == setting['job']:
-                pattern = "hadoop"
-                cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar grep -Dmapreduce.job.reduces=1 -Dmapreduce.map.memory.mb=%s %s %s \"%s\" > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['map_size'], setting['dataset'], setting['job_output'], pattern, setting['job_log'], setting['job_returncode'])
+                pattern = "hadoop.*"
+                cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar grep -Dmapreduce.job.reduces=%s -Dmapreduce.map.memory.mb=%s %s %s \"%s\" > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['num_reducers'], setting['map_size'], setting['dataset'], setting['job_output'], pattern, setting['job_log'], setting['job_returncode'])
         elif "terasort" == setting['job']:
-                cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar terasort -Dmapreduce.job.reduces=1 -Dmapreduce.map.memory.mb=%s %s %s > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['map_size'], setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
+                cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar terasort -Dmapreduce.job.reduces=%s -Dmapreduce.map.memory.mb=%s %s %s > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['num_reducers'], setting['map_size'], setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
         elif "nocomputation" == setting['job']:
-                cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar custommap -Dmapreduce.job.reduces=1 -Dmapreduce.map.memory.mb=%s %s %s 0 1 1 1024 > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['map_size'], setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
-
+                cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar custommap -Dmapreduce.job.reduces=%s -Dmapreduce.map.memory.mb=%s %s %s 0 1 1 1024 > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['num_reducers'], setting['map_size'], setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
+	elif "custommap" == setting['job']:
+		params = setting['job_params']
+		
+                cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar custommap -Dmapreduce.job.reduces=%s -Dmapreduce.map.memory.mb=%s %s %s %s %s %s %s > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['num_reducers'], setting['map_size'], setting['dataset'], setting['job_output'], params['timeout'], params['num_cpu_workers'], params['num_vm_workers'], params['vm_bytes'], setting['job_log'], setting['job_returncode'])
+	elif "classification" == setting['job']:
+                #cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar classification -Dmapreduce.job.reduces=%s -Dmapreduce.map.memory.mb=%s %s %s >%s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['num_reducers'], setting['map_size'], setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
+		num_mapper = setting['job_size'] / 64
+		num_reducer = num_mapper / 8 if num_mapper/8 > 0 else 1
+		cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar classification -m %s -r %s %s %s >%s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], num_mapper, num_reducer, setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
 	return cmd
 
 def submit_custom(command, task_log):
@@ -93,9 +107,13 @@ def submit_multiple(setting_list):
 def wait_completion(setting_list):
 	while True:
         	all_pass = True
+		count = 0
                 for setting in setting_list:
                 	if not os.path.exists(setting['job_returncode']):
                         	all_pass = False
+			else:
+				count = count + 1
+		print "Job progress -> submitted=%s, completed=%s" % (len(setting_list), count)
                 if all_pass:
                 	break
                 sleep(1)

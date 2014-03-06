@@ -4,6 +4,7 @@ import sys, argparse, requests, json
 import mylog
 import mycluster
 from node_list import historyserver
+import numpy
 
 historyserver_host = historyserver['host']
 historyserver_port = historyserver['port']
@@ -52,7 +53,6 @@ def get_task_counters(job_id, task_id):
 
 def get_task_list(job_id):
 	tasks_url = "http://%s:%s/ws/v1/history/mapreduce/jobs/%s/tasks" % (historyserver_host, historyserver_port, job_id);
-	print tasks_url
         tasks_json_response = requests.get(tasks_url)
         tasks_json = tasks_json_response.json()
 
@@ -141,6 +141,60 @@ def get_task_flow_detail(job_id, task_id):
 		task_detail['flow_in'] = float( task_detail['input_size'] / (1024*1024) / task_detail['elapsed_time'])
                 task_detail['flow_out'] = float( task_detail['output_size'] / (1024*1024) / task_detail['elapsed_time'])
 	return task_detail
+
+def create_report(setting_list, fd, measure_times):
+	for setting in setting_list:
+        	job_log = setting['job_log']
+                job_ids = mylog.lookup_job_ids(job_log)
+                job_id = job_ids[0]
+
+		list = None
+		try:
+			print job_id, job_log
+			list = get_task_list(job_id)
+		except:
+			print "error to get task list for job: %s" % job_id
+			pass
+
+		if list is not None:
+                	(map_task_list, reduce_task_list) = list
+                	print_statistics_to_file(job_id, setting, map_task_list, reduce_task_list, fd, measure_times)
+		else:
+			print "Unable to retrieve job info for %s" % job_id
+
+def print_statistics_to_file(job_id, setting, map_task_list, reduce_task_list, fd, iteration):
+	job = setting['job']
+	job_size = setting['job_size']
+	map_size = setting['map_size']
+        elapsed_time = get_job_elapsed_time(job_id)
+        map_flow_in = []
+        map_flow_out = []
+        map_elapsed_time = []
+        reduce_flow_in = []
+        reduce_flow_out = []
+        reduce_elapsed_time = []
+        for map_task_id in map_task_list:
+                task_detail = get_task_flow_detail(job_id, map_task_id)
+                map_flow_in.append(task_detail['flow_in'])
+                map_flow_out.append(task_detail['flow_out'])
+                map_elapsed_time.append(task_detail['elapsed_time'])
+
+        for reduce_task_id in reduce_task_list:
+                task_detail = get_task_flow_detail(job_id, reduce_task_id)
+                reduce_flow_in.append(task_detail['flow_in'])
+                reduce_flow_out.append(task_detail['flow_out'])
+                reduce_elapsed_time.append(task_detail['elapsed_time'])
+
+        print >> fd, \
+                job, iteration, map_size, job_size, \
+                elapsed_time, \
+                numpy.mean(map_elapsed_time), numpy.std(map_elapsed_time), \
+                numpy.mean(map_flow_in), numpy.std(map_flow_in), \
+                numpy.mean(map_flow_out), numpy.std(map_flow_out), \
+                numpy.mean(reduce_elapsed_time), numpy.std(reduce_elapsed_time), \
+                numpy.mean(reduce_flow_in), numpy.std(reduce_flow_in), \
+                numpy.mean(reduce_flow_out), numpy.std(reduce_flow_out)
+        fd.flush()
 
 
 def main(argv):

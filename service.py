@@ -22,7 +22,7 @@ def service_action(user, service, action):
 	hdfs_script = "%s/bin/hdfs" % hadoop_dir
 	
 	if service == "all":
-		service_list = ["historyserver", "mapreduce", "hdfs"]
+		service_list = ["hdfs", "mapreduce", "historyserver"] if action == "start" else ["historyserver", "mapreduce", "hdfs"]
 		for service in service_list:
 			service_action(user, service, action)
 		return
