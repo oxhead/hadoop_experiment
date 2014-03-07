@@ -48,14 +48,14 @@ def main(argv):
         #parser.add_argument("-g", '--ganglia', required=True, help="The address of the Ganglia server")
         #parser.add_argument("-c", '--cluster', required=True, help="The name of the cluster")
         #parser.add_argument("-n", '--node', action="append", required=True, help="The name of the host")
-        #parser.add_argument("-d", '--directory', required=True, help="The output directory")
+        parser.add_argument("-d", '--directory', required=True, help="The output directory")
 
 
-        #args = parser.parse_args()
+        args = parser.parse_args()
 
 	collect_start()
 	time.sleep(10)
-	collect_stop("download")
+	collect_stop(args.directory)
 
 if __name__ == "__main__":
         main(sys.argv[1:])

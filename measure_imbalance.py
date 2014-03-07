@@ -15,10 +15,12 @@ import myinfo
 import myganglia
 import mymonitor
 import myhadoop
+import myreport
 
 def run(output_file, measure_times, num_nodes, model):
 	#job_list = ["terasort", "wordcount", "grep", "nocomputation", "classification"]
 	job_list = ["terasort", "wordcount", "grep", "nocomputation", "custommap"]
+	#job_list = ["grep", "nocomputation", "custommap"]
 	# job_size_list = ["64MB", "128MB", "256MB", "512MB", "1GB", "2GB", "4GB", "8GB"]
 	job_size_list = ["1GB", "2GB", "4GB", "8GB"]
 	map_size = 1024
@@ -45,8 +47,9 @@ def run(output_file, measure_times, num_nodes, model):
 		#myhadoop.prepare_data(job_size_list)
 		
 		
-		job_num= num_nodes * 3 * 2	
+		job_num= num_nodes * 2 * 2	
 		#job_num = num_nodes
+		#job_num = 4
 		prefix_run = "%s-%sc-%s" % (prefix, job_num, datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
 		setting_list = []
 		time_start = int(time.time())
@@ -69,7 +72,8 @@ def run(output_file, measure_times, num_nodes, model):
 
 		time_end = int(time.time())
 		mymonitor.collect_stop("download/%s_%s" % (prefix_run, str(i)))
-		myganglia.collect("download/%s_%s_%s" % (prefix_run, job, str(i)), time_start, time_end)
+		myganglia.collect("download/%s_%s" % (prefix_run, str(i)), time_start, time_end)
+		myreport.report_waiting_time(time_start, time_end, "results/waiting_time_%s_%s.csv" % (prefix_run, str(i)))
 
 		# make time or historyserver to be ready
 		sleep(60)
@@ -78,6 +82,9 @@ def run(output_file, measure_times, num_nodes, model):
 
 		for setting in setting_list:
 			myjob.clean_job(setting)
+
+		print "Start time:", datetime.datetime.fromtimestamp(time_start).strftime('%Y-%m-%d %H:%M:%S')
+		print "End time:", datetime.datetime.fromtimestamp(time_end).strftime('%Y-%m-%d %H:%M:%S')
 
 def main(argv):
 	parser = argparse.ArgumentParser(description='Configuration generator')

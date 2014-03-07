@@ -105,18 +105,23 @@ def submit_multiple(setting_list):
 	wait_completion(setting_list)
 
 def wait_completion(setting_list):
+	check_times = 0
 	while True:
-        	all_pass = True
 		count = 0
+		all_pass = True
                 for setting in setting_list:
                 	if not os.path.exists(setting['job_returncode']):
                         	all_pass = False
 			else:
 				count = count + 1
-		print "Job progress -> submitted=%s, completed=%s" % (len(setting_list), count)
+		icon = "*" if check_times%2 == 0 else "+"	
+		sys.stdout.write("\r%s Job progress -> submitted=%s, completed=%s" % (icon, len(setting_list), count))
+		sys.stdout.flush()
+		
                 if all_pass:
                 	break
                 sleep(1)
+		check_times = check_times + 1
 
 def clean_job(setting):
 	cmd = "%s/bin/hadoop dfs -rm -r %s" % (setting['hadoop_dir'], setting['job_output'])
