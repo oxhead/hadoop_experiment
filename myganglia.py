@@ -44,7 +44,7 @@ def collect(output_dir, time_start=None, time_end=None):
                         export_file = os.path.join(export_dir, "%s_%s.csv" % (node_host, metric))
                         if time_start is None or time_end is None:
                                 cmd = "curl --silent 'http://%s/ganglia2/graph.php?c=%s&h=%s&n=1&v=&m=%s&csv=1&step=1&r=hour' > %s" % (ganglia_server, node_cluster, node_host,metric, export_file)
-				print cmd
+				#print cmd
                                 os.system(cmd)
                         else:
 				current_time_end = time_end
@@ -54,7 +54,7 @@ def collect(output_dir, time_start=None, time_end=None):
                                         export_file_split = os.path.join(export_dir, "%s_%s_%s.csv" % (node_host, metric, str(i)))
                                         current_time_start = current_time_end - report_duration
                                         cmd = "curl --silent 'http://%s/ganglia2/graph.php?c=%s&h=%s&n=1&v=&m=%s&cs=%s&ce=%s&csv=1&step=1&r=hour' > %s" % (ganglia_server, node_cluster, node_host, metric, str(current_time_start), str(current_time_end), export_file_split)
-					print cmd
+					#print cmd
 					os.system(cmd)
 					current_time_end = current_time_start
 

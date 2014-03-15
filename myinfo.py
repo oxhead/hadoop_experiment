@@ -162,6 +162,17 @@ def create_report(setting_list, fd, measure_times):
 		else:
 			print "Unable to retrieve job info for %s" % job_id
 
+def print_header_to_file(fd):
+	print >> fd, \
+                "job", "order", "map_size", "job_size", \
+                "job_elpased_time", \
+                "map_elapsed_time_mean", "map_elapsed_time_std", \
+                "map_flow_in_mean", "map_flow_in_std", \
+                "map_flow_out_mean", "map_flow_out_std", \
+                "reduce_elapsed_time_mean", "reduce_elapsed_time_std", \
+                "reduce_flow_in_mean", "reduce_flow_in_std", \
+                "reduce_flow_out_mean", "reduce_flow_out_std"
+
 def print_statistics_to_file(job_id, setting, map_task_list, reduce_task_list, fd, iteration):
 	job = setting['job']
 	job_size = setting['job_size']
@@ -186,14 +197,14 @@ def print_statistics_to_file(job_id, setting, map_task_list, reduce_task_list, f
                 reduce_elapsed_time.append(task_detail['elapsed_time'])
 
         print >> fd, \
-                job, iteration, map_size, job_size, \
-                elapsed_time, \
-                numpy.mean(map_elapsed_time), numpy.std(map_elapsed_time), \
-                numpy.mean(map_flow_in), numpy.std(map_flow_in), \
-                numpy.mean(map_flow_out), numpy.std(map_flow_out), \
-                numpy.mean(reduce_elapsed_time), numpy.std(reduce_elapsed_time), \
-                numpy.mean(reduce_flow_in), numpy.std(reduce_flow_in), \
-                numpy.mean(reduce_flow_out), numpy.std(reduce_flow_out)
+                job, ",", iteration, ",", map_size, ",", job_size, ",", \
+                elapsed_time, ",", \
+                numpy.mean(map_elapsed_time), ",", numpy.std(map_elapsed_time), ",",\
+                numpy.mean(map_flow_in), ",", numpy.std(map_flow_in), ",", \
+                numpy.mean(map_flow_out), ",", numpy.std(map_flow_out), ",", \
+                numpy.mean(reduce_elapsed_time), ",", numpy.std(reduce_elapsed_time), ",", \
+                numpy.mean(reduce_flow_in), ",", numpy.std(reduce_flow_in), ",", \
+                numpy.mean(reduce_flow_out), ",", numpy.std(reduce_flow_out)
         fd.flush()
 
 

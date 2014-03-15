@@ -19,26 +19,26 @@ def collect_start():
 
 	kill_service()
         for node in node_list:
-		print "[%s] start monitoring" % node
+		#print "[%s] start monitoring" % node
 		remote_cmd = "ssh chsu6@%s \"%s\"" % (node, cmd)
-		print remote_cmd
+		#print remote_cmd
 		os.system(remote_cmd)
 
 def collect_stop(output_dir):
 	kill_service()	
 	os.system("mkdir -p %s" % output_dir)
 	for node in node_list:
-		print "[%s] stop monitoring" % node
+		#print "[%s] stop monitoring" % node
 		node_output_file = "%s/dstat_%s.csv" % (output_dir, node)
 		remote_copy_cmd = "scp chsu6@%s:%s %s" % (node, output_file, node_output_file)
-		os.system(remote_copy_cmd)
+		Command(remote_copy_cmd).run()
 	
 def kill_service():
 	kill_cmd = "ps aux | grep dstat | grep python | tr -s ' ' | cut -d' ' -f2 | xargs kill -9"
 	for node in node_list:
-                print "[%s] kill monitoring" % node
+                #print "[%s] kill monitoring" % node
                 remote_stop_cmd = "ssh chsu6@%s \"%s\"" % (node, kill_cmd)
-                print remote_stop_cmd
+                #print remote_stop_cmd
                 os.system(remote_stop_cmd)
 
 def main(argv):

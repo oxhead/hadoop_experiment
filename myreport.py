@@ -3,19 +3,33 @@ import sys
 import argparse
 import mycluster
 import datetime
+import mylog
 
 def report_waiting_time(time_start, time_end, output_file):
 	cluster = mycluster.load()
 	fetch_history(cluster.mapreduce.getResourceManager().host, "19888", time_start, time_end, output_file)	
 
+def report_waiting_time_by_jobs(setting_list, output_file):
+	cluster = mycluster.load()
+	job_id_list = []
+	for setting in setting_list:
+		job_ids = mylog.lookup_job_ids(setting['job_log'])
+		job_id_list.extend(job_ids)
+	fetch_jobs(cluster.mapreduce.getResourceManager().host, "19888", job_id_list, output_file)
+
+	
+
 # time_start: sec
 # time_end: sec, e.g. time.time()
 def fetch_history(host, port, time_start, time_end, output_file):
+	#if time_start is not None and time_end is not None:
+	#	print "# Start time:", time_start, datetime.datetime.fromtimestamp(time_start).strftime('%Y-%m-%d %H:%M:%S')
+       	# 	print "# End time:", time_end, datetime.datetime.fromtimestamp(time_end).strftime('%Y-%m-%d %H:%M:%S')
 	time_start = time_start if time_start is not None else ""
 	time_end = time_end if time_end is not None else ""
 	job_list_url = "http://%s:%s/ws/v1/history/mapreduce/jobs" % (host, port)
         job_list_query_url = "%s?startedTimeBegin=%s&finishTimeEnd=%s" % (job_list_url, time_start*1000, time_end*1000)
-	print "Job lists", job_list_query_url
+	print "Job lists ->", job_list_query_url
 	job_list_json = requests.get(job_list_query_url)
 	jobs = job_list_json.json()["jobs"]["job"]
 	job_list = []
@@ -24,7 +38,7 @@ def fetch_history(host, port, time_start, time_end, output_file):
 			job_list.append(job["id"])
 	
 	fetch_jobs(host, port, job_list, output_file)
-	print "Job lists", job_list_query_url
+
 	
 def fetch_jobs(host, port, jobs, output_file):
 	f = open(output_file, "w")
@@ -34,7 +48,7 @@ def fetch_jobs(host, port, jobs, output_file):
 
 	for job_id in jobs:
 		job_url = "%s/%s" % (job_list_url, job_id)
-		print job_url
+		print "\t", job_url
 		job_json = requests.get(job_url)
 		#print job_json.json()
 		try:
@@ -87,8 +101,8 @@ def fetch_jobs(host, port, jobs, output_file):
 		f.write("%s,%s\n" % (datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d %H:%M:%S'), waitingTime[t])) 
 	f.close()
 
-	print "@ Start time:", datetime.datetime.fromtimestamp(startTime).strftime('%Y-%m-%d %H:%M:%S')
-        print "@ End time:", datetime.datetime.fromtimestamp(endTime).strftime('%Y-%m-%d %H:%M:%S')
+	#print "@ Start time:", datetime.datetime.fromtimestamp(startTime).strftime('%Y-%m-%d %H:%M:%S')
+        #print "@ End time:", datetime.datetime.fromtimestamp(endTime).strftime('%Y-%m-%d %H:%M:%S')
 
 def fetch_job_info(host, port, job_id, output_file):
 	f = open(output_file, "w")

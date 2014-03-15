@@ -80,6 +80,9 @@ def generate_command(setting):
 		cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar classification -m %s -r %s %s %s >%s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], num_mapper, num_reducer, setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
 	return cmd
 
+def print_job_detail(setting):
+	print "Job: %s (size=%s, dataset=%s, log=%s)" % (setting["job"], setting['job_size'], setting['dataset'], setting['job_log'])
+
 def submit_custom(command, task_log):
 	cmd = Command(command).run()
 	job_ids = mylog.lookup_job_ids(task_log)
@@ -87,7 +90,8 @@ def submit_custom(command, task_log):
 
 def submit_async(setting):
         cmd = generate_command(setting)
-        print cmd
+        #print cmd
+	print_job_detail(setting)
 	os.system("mkdir -p %s" % setting['log_dir'])
 	os.system(" (%s) &" % cmd)
 	return setting
@@ -122,6 +126,7 @@ def wait_completion(setting_list):
                 	break
                 sleep(1)
 		check_times = check_times + 1
+	print "\n"
 
 def clean_job(setting):
 	cmd = "%s/bin/hadoop dfs -rm -r %s" % (setting['hadoop_dir'], setting['job_output'])

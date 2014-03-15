@@ -22,3 +22,6 @@ Service management
 Cluster configuration
 * node_list.py: the nodes for MapReduce and HDFS
 * node_configuration.py: the setting for each node above
+
+Measure imbalance
+* python2.7 measure_imbalance.py -d results/test1 -i 1 -n 4 -m decoupled
