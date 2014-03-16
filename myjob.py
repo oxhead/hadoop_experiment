@@ -126,7 +126,7 @@ def wait_completion(setting_list):
                 	break
                 sleep(1)
 		check_times = check_times + 1
-	print "\n"
+	sys.stdout.write("\r\n")
 
 def clean_job(setting):
 	cmd = "%s/bin/hadoop dfs -rm -r %s" % (setting['hadoop_dir'], setting['job_output'])
