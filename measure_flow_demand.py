@@ -23,9 +23,9 @@ def run(output_directory, model):
 	# job_size_list = ["64MB", "128MB", "256MB", "512MB", "1GB", "2GB", "4GB", "8GB"]
 	job_size = "64MB"
 	map_size = 1024
-	prefix="flow_demand"
+	prefix="flow-demand"
 
-	iteration = 1
+	iteration = 2
 
 	configuration = "setting/node_list.py.%s.%sc1s" % (model, 1)
         myhadoop.switch_configuration(configuration)
@@ -34,24 +34,27 @@ def run(output_directory, model):
         myhadoop.prepare_data([job_size])
 
 	experiment = myexperiment.Experiment(output_directory)
-	experiment.start()
+	#experiment.start()
 	setting_list = []
 	for job in job_list:
+		job_params = None
+                if job == "custommap":
+                        job_params = {'timeout': '1', 'num_cpu_workers': '1', 'num_vm_workers':'1', 'vm_bytes':str(1024*1024*1)}
+                elif job == "nocomputation":
+                        job = "custommap"
+                        job_params = {'timeout': '0', 'num_cpu_workers': '1', 'num_vm_workers':'1', 'vm_bytes':str(1024*1024*1)}
 		for i in range(1, iteration+1):
-			prefix_run = "%s-%s-%s" % (prefix, job, i)
+			prefix_run = "%s-i%s" % (prefix, i)
 			real_size = myjob.convert_unit(job_size)
 			num_reducers = 1
-			job_params = None
-			if job == "custommap":
-				job_params = {'timeout': '1', 'num_cpu_workers': '1', 'num_vm_workers':'1', 'vm_bytes':str(1024*1024*1)}
 				
-			setting = myjob.get_job_setting(job, job_params=job_params, map_size=map_size, job_size=real_size, num_reducers=num_reducers, prefix="%s-n%s" % (prefix_run, i))
+			setting = myjob.get_job_setting(job, job_params=job_params, map_size=map_size, job_size=real_size, num_reducers=num_reducers, prefix=prefix_run)
 			myjob.submit_async(setting)
 			setting_list.append(setting)
 			myjob.wait_completion([setting])
 
 	myreport.report_flow_demand_by_jobs(setting_list, "%s/flow_demand.csv" % output_directory)
-	experiment.stop()
+	#experiment.stop()
 
 	for setting in setting_list:
 		myjob.clean_job(setting)

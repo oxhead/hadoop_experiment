@@ -22,6 +22,6 @@ def prepare_data(size_list):
 		Command("%s prepare_data.py -u chsu6 -t terasort -s %s" % (sys.executable, size)).run()
 		print "Prepare data for wikipedia: %s" % size
         	Command("%s prepare_data.py -u chsu6 -t wikipedia -d /nfs_power2/dataset -s %s" % (sys.executable, size)).run()
-		print "Prepare data for kmeans: %s" % size
-                Command("%s prepare_data.py -u chsu6 -t kmeans -d /nfs_power2/dataset -s %s" % (sys.executable, size)).run()
+		#print "Prepare data for kmeans: %s" % size
+                #Command("%s prepare_data.py -u chsu6 -t kmeans -d /nfs_power2/dataset -s %s" % (sys.executable, size)).run()
 

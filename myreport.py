@@ -22,7 +22,7 @@ def report_flow_demand_by_jobs(setting_list, output_file):
 	hs = get_history_server()
 
 	fd = open(output_file, "w")
-        print >> fd, "task", "id", "type", "elpased_time", "flow_in", "flow_out",
+        fd.write("task,id,type,elpased_time,flow_in,flow_out\n")
 
         job_list = hs.get_job_list()
 	for job_id in job_id_list:
@@ -30,7 +30,7 @@ def report_flow_demand_by_jobs(setting_list, output_file):
 		task_list = hs.get_task_list(job_id)
 		for task_id in task_list:
 			task_detail = hs.get_task_flow_detail(job_id, task_id)
-			print >> fd, job_detail["name"], task_id, task_detail['type'], task_detail['elapsedTime'], task_detail['flow_in'], task_detail['flow_out']
+			fd.write("%s,%s,%s,%s,%s,%s\n" % (job_detail["name"], task_id, task_detail['type'], task_detail['elapsedTime'], task_detail['flow_in'], task_detail['flow_out']))
 	fd.flush()
 	fd.close()
 
@@ -89,8 +89,40 @@ def report_storage_flow_capability_by_jobs(setting_list, num_nodes, output_file)
         print >> fd, num_nodes, len(task_list), finishTime - startTime, flow_in, flow_out
         fd.flush()
         fd.close()
-		
 
+def report_weak_scaling_by_jobs(setting_list, output_file):
+	fd = open(output_file, "w")
+        fd.write("job,num_slots,problem_size,elpased_time,sizeup,efficiency\n")
+	
+	hs = get_history_server()
+	job_id_list = []
+	job_record = {}
+	for setting in setting_list:
+		try:
+			job = setting['job']
+			job_id = mylog.lookup_job_ids(setting['job_log'])[0]
+			job_size = setting['job_size']
+			job_elapsed_time = hs.get_job_elapsed_time(job_id)
+			job_num_slots = job_size/64
+			if job not in job_record:
+				job_record[job] = {}
+			job_record[job][job_num_slots] = [job_size, job_elapsed_time]
+		except:
+			print "Unable to get the elapsed time for job:", job_id
+	print job_record
+
+	for (job, record) in job_record.iteritems():
+		for num_core in sorted(record.keys()):
+			job_size = record[num_core][0]
+			job_elapsed_time = record[num_core][1]
+			sizeup = (job_size / record[1][0]) * (record[1][1] / job_elapsed_time)
+			efficiency = sizeup/num_core
+			record[num_core].append(sizeup)
+			record[num_core].append(efficiency)
+			fd.write("%s,%s,%s,%s,%s,%s\n" % (job, num_core, job_size, job_elapsed_time, sizeup, efficiency))	
+	fd.flush()
+	fd.close()
+		
 def report_waiting_time(time_start, time_end, output_file):
 	hs = get_history_server()
 	job_list = hs.get_job_list(time_start, time_end)
@@ -209,24 +241,26 @@ def create_task_timeline(hs, jobs, output_file):
 	f = open(output_file, "w")	
         f.write("time,maps,shuffle,merge,reduce\n")
         for t in range(startTime, endTime):
-                f.write("%s,%s,%s,%s,%s\n" % (t - startTime, runningMaps[t], shufflingReduces[t], mergingReduces[t], runningReduces[t]))
+                #f.write("%s,%s,%s,%s,%s\n" % (t - startTime, runningMaps[t], shufflingReduces[t], mergingReduces[t], runningReduces[t]))
+		timestamp = datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d %H:%M:%S')
+		f.write("%s,%s,%s,%s,%s\n" % (timestamp, runningMaps[t], shufflingReduces[t], mergingReduces[t], runningReduces[t]))
         f.close()
 
 
 def create_flow_timeline(hs, jobs, output_file):
 	flow_in_table = {
-		"terasort": 1,
-		"grep": 0.4,
-		"word count": 1.3,
-		"custommap": 2,
-		"default": 1,
+		"terasort": 6.2,
+		"grep": 13.8,
+		"word count": 3.6,
+		"custommap": 6.8,
+		"default": 5,
 	}
 	flow_out_table = {
-		"terasort": 1,
-                "grep": 0.4,
-                "word count": 1.3,
-		"custommap": 3,
-                "default": 1,
+		"terasort": 9.5,
+                "grep": 0,
+                "word count": 3.8,
+		"custommap": 0,
+                "default": 0,
         }
 
         (task_job_mapping, map_list, reduce_list, mapStartTime, mapEndTime, reduceStartTime, reduceEndTime, reduceShuffleTime, reduceMergeTime) = hs.get_time_counters(jobs)
@@ -289,7 +323,10 @@ def create_flow_timeline(hs, jobs, output_file):
 	f = open(output_file, "w")
         f.write("time,maps,shuffle,merge,reduce,map_flow_in, reduce_flow_out\n")
         for t in range(startTime, endTime):
-                f.write("%s,%s,%s,%s,%s,%s,%s\n" % (t - startTime, runningMaps[t], shufflingReduces[t], mergingReduces[t], runningReduces[t], mapFlowIn[t], reduceFlowOut[t]))
+                #f.write("%s,%s,%s,%s,%s,%s,%s\n" % (t - startTime, runningMaps[t], shufflingReduces[t], mergingReduces[t], runningReduces[t], mapFlowIn[t], reduceFlowOut[t]))
+		timestamp = datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d %H:%M:%S')
+		f.write("%s,%s,%s,%s,%s,%s,%s\n" % (timestamp, runningMaps[t], shufflingReduces[t], mergingReduces[t], runningReduces[t], mapFlowIn[t], reduceFlowOut[t])
+)
         f.close()
 
 

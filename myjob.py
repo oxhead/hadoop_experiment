@@ -68,7 +68,7 @@ def generate_command(setting):
         elif "terasort" == setting['job']:
                 cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar terasort -Dmapreduce.job.reduces=%s -Dmapreduce.map.memory.mb=%s %s %s > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['num_reducers'], setting['map_size'], setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
         elif "nocomputation" == setting['job']:
-                cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar custommap -Dmapreduce.job.reduces=%s -Dmapreduce.map.memory.mb=%s %s %s 0 1 1 1024 > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['num_reducers'], setting['map_size'], setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
+                cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar nocomputation -Dmapreduce.job.reduces=%s -Dmapreduce.map.memory.mb=%s %s %s > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['num_reducers'], setting['map_size'], setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
 	elif "custommap" == setting['job']:
 		params = setting['job_params']
 		

@@ -53,6 +53,10 @@ class Experiment():
 		print "[Time] End    :", datetime.datetime.fromtimestamp(self.time_end).strftime('%Y-%m-%d %H:%M:%S')
 		print "[Time] Elapsed:", self.time_end - self.time_start, "sec"
 
+	def clean(self, setting_list):
+		for setting in setting_list:
+                	myjob.clean_job(setting)
+
 def main(argv):
 	parser = argparse.ArgumentParser(description='Configuration generator')
         parser.add_argument("-d", "--directory", required=True, help="The output directory")

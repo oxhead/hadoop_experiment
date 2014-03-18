@@ -23,10 +23,11 @@ def run(output_directory, model):
 	job_size_list = ["64MB", "128MB", "256MB", "512MB", "1GB", "2GB", "4GB"]
 	#job_size_list = ["256MB", "512MB"]
 	map_size = 1024
-	prefix="flow-imbalance"
+	prefix="flow-contention"
 	num_nodes = 4
-	num_jobs = 16
-	configuration = "setting/node_list.py.%s.%sc%ss" % (model, 1, num_nodes)
+	num_jobs = num_nodes * 4 * 2
+	#num_jobs = 4
+	configuration = "setting/node_list.py.%s.%sc%ss" % (model, num_nodes, 1)
         myhadoop.switch_configuration(configuration)
         # wait HDFS to turn off safe mode
         sleep(60)

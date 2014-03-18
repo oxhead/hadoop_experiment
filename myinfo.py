@@ -148,9 +148,12 @@ class HistoryServer():
 		time_end = time_end if time_end is not None else ""
 		job_list_url = "%s/jobs" % self.get_query_url()
 		job_list_query_url = "%s?startedTimeBegin=%s&finishTimeEnd=%s" % (job_list_url, time_start*1000, time_end*1000)
-		#print "Job lists ->", job_list_query_url
+		jobs = []
 		job_list_json = requests.get(job_list_query_url)
-		jobs = job_list_json.json()["jobs"]["job"]
+		try:
+			jobs = job_list_json.json()["jobs"]["job"]
+		except:
+			print "Unable to retrieve job lists at", job_list_query_url
 		job_list = []
 		for job in jobs:
 			if job["state"] == "SUCCEEDED":
@@ -213,19 +216,19 @@ class HistoryServer():
 
 	def get_task_flow_detail(self, job_id, task_id):
 		task_detail = self.get_task_detail(job_id, task_id)
-		elapsed_task_time = int(task_detail['finishTime']) - int(task_detail['startTime'])
-		task_detail['elapsedTime'] = elapsed_task_time / 1000.0
+		elapsed_task_time = task_detail['finishTime'] - task_detail['startTime']
+		task_detail['elapsedTime'] = elapsed_task_time
 		
 		if task_detail['type'] == "MAP":
 			task_detail['input_size'] = int(task_detail['BYTES_READ'])
 			task_detail['output_size'] = int(task_detail['MAP_OUTPUT_MATERIALIZED_BYTES'])
-			task_detail['flow_in'] = float( task_detail['input_size'] / (1024*1024) / task_detail['elapsedTime'])
-			task_detail['flow_out'] = float( task_detail['output_size'] / (1024*1024) / task_detail['elapsedTime'])
+			task_detail['flow_in'] = task_detail['input_size'] / (1024.0*1024.0) / task_detail['elapsedTime']
+			task_detail['flow_out'] = task_detail['output_size'] / (1024.0*1024.0) / task_detail['elapsedTime']
 		elif task_detail['type'] == "REDUCE":
 			task_detail['input_size'] = int(task_detail['REDUCE_SHUFFLE_BYTES'])
 			task_detail['output_size'] = int(task_detail['BYTES_WRITTEN'])
-			task_detail['flow_in'] = float( task_detail['input_size'] / (1024*1024) / task_detail['elapsedTime'])
-			task_detail['flow_out'] = float( task_detail['output_size'] / (1024*1024) / task_detail['elapsedTime'])
+			task_detail['flow_in'] = task_detail['input_size'] / (1024.0*1024.0) / task_detail['elapsedTime']
+			task_detail['flow_out'] = task_detail['output_size'] / (1024.0*1024.0) / task_detail['elapsedTime']
 		return task_detail
 
 def main(argv):
@@ -236,8 +239,10 @@ def main(argv):
         args = parser.parse_args()
 
 	hs = HistoryServer(args.host, args.port)
-	job_list = hs.get_job_list()
-	print job_list
+	#job_list = hs.get_job_list()
+	#print job_list
+	output = hs.get_task_flow_detail("job_1394993376002_0004", "task_1394993376002_0004_m_000000")
+	print output
         sys.exit(0)
 
 

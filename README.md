@@ -23,11 +23,10 @@ Cluster configuration
 * node_list.py: the nodes for MapReduce and HDFS
 * node_configuration.py: the setting for each node above
 
-Measure imbalance
-* python2.7 measure_imbalance.py -d results/imbalance_reference_4c1s_2 -i 1 -n 4 -m reference
-
-Measure weak scaling
-* python2.7 measure_weak_scaling.py -d results/weak_scaling -i 4 -n 4 -m decoupled
+Measurement
+* Imbalance: python2.7 measure_imbalance.py -d results/imbalance_reference_4c1s_2 -i 1 -n 4 -m reference
+* Weak scaling: python2.7 measure_weak_scaling.py -d results/weak_scaling -i 4 -n 4 -m decoupled
+* Resource contention: python2.7 measure_contention.py -d results/contention_4c -m decoupled
 
 Measure flow
 * Flow demand: python2.7 measure_flow_demand.py -d results/flowdemand_fecoupled_1c1s -m decoupled
