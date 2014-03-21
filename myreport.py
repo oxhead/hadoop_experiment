@@ -4,6 +4,8 @@ import argparse
 import mycluster
 import datetime
 
+import numpy
+
 import node_list
 import mylog
 import myinfo
@@ -11,6 +13,78 @@ import myinfo
 def get_history_server():
 	hs = myinfo.HistoryServer(node_list.historyserver['host'], node_list.historyserver['port'])
 	return hs
+
+def parse_job_id_list(aList):
+	job_id_list = []
+        for object in aList:
+                if type(object) is dict:
+                        job_ids = mylog.lookup_job_ids(object['job_log'])
+                        job_id_list.extend(job_ids)
+                if type(object) is str:
+                        job_id_list.append(object)
+	return job_id_list
+
+def report_job_analysis(aList, output_file):
+	job_id_list = parse_job_id_list(aList)
+
+        task_detail_list = {}
+        hs = get_history_server()
+
+        fd = open(output_file, "w")
+	fd.write("job_id,job_name,num_maps,num_reduces,elapsed_time")
+	fd.write(",map_elapsed_time_mean,map_elapsed_time_std")
+	fd.write(",map_elapsed_time_min,map_elpased_time_max")
+	fd.write(",map_flow_in_mean,map_flow_in_std")
+	fd.write(",map_flow_out_mean,map_flow_out_std")
+	fd.write(",map_waiting_time_mean,map_waiting_time_std")
+	fd.write(",reduce_elapsed_time_mean,reduce_elapsed_time_std")
+	fd.write(",reduce_elapsed_time_min,reduce_elapsed_time_max")
+	fd.write(",reduce_flow_in_mean,reduce_flow_in_std")
+	fd.write(",reduce_flow_out_mean,reduce_flow_out_std")
+	fd.write(",reduce_waiting_time_mean,reduce_waiting_time_std")
+	fd.write("\n")
+
+        for job_id in job_id_list:
+                job_detail = hs.get_job_detail(job_id)
+                task_list = hs.get_task_list(job_id)
+		map_flow_in = []
+		map_flow_out = []
+		map_elapsed_time = []
+		map_waiting_time = []
+		reduce_flow_in = []
+		reduce_flow_out = []
+		reduce_elapsed_time = []
+		reduce_waiting_time = []
+                for task_id in task_list:
+                        task_detail = hs.get_task_flow_detail(job_id, task_id)
+			if "m" in task_id:
+				map_flow_in.append(task_detail['flow_in'])
+				map_flow_out.append(task_detail['flow_out'])
+				map_elapsed_time.append(task_detail['elapsedTime'])
+				map_waiting_time.append(task_detail['waitingTime'])	
+			elif "r" in task_id:
+				reduce_flow_in.append(task_detail['flow_in'])
+                                reduce_flow_out.append(task_detail['flow_out'])
+				reduce_elapsed_time.append(task_detail['elapsedTime'])
+
+		
+		fd.write("%s,%s,%s,%s" % (job_id, job_detail['name'], job_detail['mapsTotal'], job_detail['reducesTotal']))
+		fd.write(",%s" % (job_detail['finishTime']-job_detail['startTime']))
+		fd.write(",%s,%s" % (numpy.mean(map_elapsed_time), numpy.std(map_elapsed_time)))
+		fd.write(",%s,%s" % (numpy.min(map_elapsed_time), numpy.max(map_elapsed_time)))
+		fd.write(",%s,%s" % (numpy.mean(map_flow_in), numpy.std(map_flow_in)))
+		fd.write(",%s,%s" % (numpy.mean(map_flow_out), numpy.std(map_flow_out)))
+		fd.write(",%s,%s" % (numpy.mean(map_waiting_time), numpy.std(map_waiting_time)))
+		fd.write(",%s,%s" % (numpy.mean(reduce_elapsed_time), numpy.std(reduce_elapsed_time)))
+		fd.write(",%s,%s" % (0, 0))
+		fd.write(",%s,%s" % (numpy.mean(reduce_flow_in), numpy.std(reduce_flow_in)))
+		fd.write(",%s,%s" % (numpy.mean(reduce_flow_out), numpy.std(reduce_flow_out)))
+		fd.write(",%s,%s" % (0, 0))
+		fd.write("\n")
+			#numpy.min(reduce_elapsed_time), numpy.max(reduce_elapsed_time), \
+			#numpy.mean(reduce_waiting_time), numpy.std(reduce_waiting_time)
+        fd.flush()
+        fd.close()
 
 def report_flow_demand_by_jobs(setting_list, output_file):
 	job_id_list = []
@@ -147,6 +221,13 @@ def report_task_timeline_by_jobs(setting_list, output_file):
                 job_id_list.extend(job_ids)
         create_task_timeline(get_history_server(), job_id_list, output_file)
 
+def report_task_detail_timeline_by_jobs(setting_list, output_file):
+	job_id_list = []
+        for setting in setting_list:
+                job_ids = mylog.lookup_job_ids(setting['job_log'])
+                job_id_list.extend(job_ids)
+        create_task_detail_timeline(get_history_server(), job_id_list, output_file)
+
 def report_flow_timeline(time_start, time_end, output_file):
         hs = get_history_server()
         job_list = hs.get_job_list(time_start, time_end)
@@ -207,7 +288,7 @@ def create_waiting_time(hs, jobs, output_file):
 
 
 def create_task_timeline(hs, jobs, output_file):
-        (task_job_mapping, map_list, reduce_list, mapStartTime, mapEndTime, reduceStartTime, reduceEndTime, reduceShuffleTime, reduceMergeTime) = hs.get_time_counters(jobs)
+        (task_job_mapping, task_job_id_mapping, ap_list, reduce_list, mapStartTime, mapEndTime, reduceStartTime, reduceEndTime, reduceShuffleTime, reduceMergeTime) = hs.get_time_counters(jobs)
 
         runningMaps = {}
         shufflingReduces = {}
@@ -263,7 +344,7 @@ def create_flow_timeline(hs, jobs, output_file):
                 "default": 0,
         }
 
-        (task_job_mapping, map_list, reduce_list, mapStartTime, mapEndTime, reduceStartTime, reduceEndTime, reduceShuffleTime, reduceMergeTime) = hs.get_time_counters(jobs)
+        (task_job_mapping, task_job_id_mapping, ap_list, reduce_list, mapStartTime, mapEndTime, reduceStartTime, reduceEndTime, reduceShuffleTime, reduceMergeTime) = hs.get_time_counters(jobs)
 
         runningMaps = {}
         shufflingReduces = {}
@@ -329,7 +410,62 @@ def create_flow_timeline(hs, jobs, output_file):
 )
         f.close()
 
+def create_task_detail_timeline(hs, jobs, output_file):
+        (task_job_mapping, task_job_id_mapping, map_list, reduce_list, mapStartTime, mapEndTime, reduceStartTime, reduceEndTime, reduceShuffleTime, reduceMergeTime) = hs.get_time_counters(jobs)
 
+        startTime = min(
+                reduce(min, mapStartTime.values()),
+                reduce(min, reduceStartTime.values()))
+        endTime = max(
+                reduce(max, mapEndTime.values()),
+                reduce(max, reduceEndTime.values()))
+
+	job_timeline = {}
+	for job in jobs:
+		runningMaps = {}
+        	shufflingReduces = {}
+        	mergingReduces = {}
+        	runningReduces = {}
+        	for t in range(startTime, endTime):
+               		runningMaps[t] = 0
+                	shufflingReduces[t] = 0
+                	mergingReduces[t] = 0
+                	runningReduces[t] = 0
+		job_timeline[job] = [runningMaps, shufflingReduces, mergingReduces, runningReduces]
+
+	for mapper in mapStartTime.keys():
+                for t in range(mapStartTime[mapper], mapEndTime[mapper]):
+			job_timeline[task_job_id_mapping[mapper]][0][t] += 1
+        for reducer in reduceStartTime.keys():
+                for t in range(reduceStartTime[reducer], reduceShuffleTime[reducer]):
+			job_timeline[task_job_id_mapping[mapper]][1][t] += 1
+                for t in range(reduceShuffleTime[reducer], reduceMergeTime[reducer]):
+			job_timeline[task_job_id_mapping[mapper]][2][t] += 1
+                for t in range(reduceMergeTime[reducer], reduceEndTime[reducer]):
+			job_timeline[task_job_id_mapping[mapper]][3][t] += 1
+
+        f = open(output_file, "w")
+	f.write("time")
+	for job in jobs:
+		f.write(",%s_map,%s_shuffle,%s_merge,%s_reduce" % (job, job, job, job))
+	f.write(",total_map,total_shuffle,total_merge,total_reduce\n")
+        for t in range(startTime, endTime):
+                timestamp = datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d %H:%M:%S')
+		f.write(timestamp)
+		total_map = 0
+		total_shuffle = 0
+		total_merge = 0
+		total_reduce = 0
+		for job in jobs:
+			timeline = job_timeline[job]
+			total_map += timeline[0][t]
+			total_shuffle += timeline[1][t]
+			total_merge += timeline[2][t]
+			total_reduce += timeline[3][t]
+			f.write(",%s,%s,%s,%s" % (timeline[0][t], timeline[1][t], timeline[2][t], timeline[3][t]))
+		f.write(",%s,%s,%s,%s\n" % (total_map, total_shuffle, total_merge, total_reduce))
+			
+        f.close()
 
 def main(argv):
 

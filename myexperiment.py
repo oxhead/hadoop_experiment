@@ -22,6 +22,7 @@ class Experiment():
 		self.output_directory = output_directory
 		self.time_start = None
 		self.time_end = None
+		self.setting_list = []
 
 		os.system("mkdir -p %s" % output_directory)
 		self.output_file = "%s/measure_imbalance.csv" % output_directory
@@ -30,6 +31,10 @@ class Experiment():
 		self.output_dstat = "%s/dstat" % output_directory
 		self.output_flow_timeline = "%s/flow_timeline.csv" % output_directory
 		self.output_task_timeline = "%s/task_timeline.csv" % output_directory
+		self.output_job_analysis = "%s/job_analysis.csv" % output_directory
+	
+	def addJob(self, setting):
+		self.setting_list.append(setting)
 
 	def start(self):
 		self.time_start = int(time.time())
@@ -42,19 +47,30 @@ class Experiment():
 		print "Status: Wait for completion of HDFS service (60 sec)"
 
 		sleep(60)
-		print "[Report] Waiting time"
-		myreport.report_waiting_time(self.time_start, self.time_end, self.output_waiting_time)
-		print "[Report] Task timeline"
-		myreport.report_task_timeline(self.time_start, self.time_end, self.output_task_timeline)
-		print "[Report] Flow timeline"
-		myreport.report_flow_timeline(self.time_start, self.time_end, self.output_flow_timeline)
+	
+		if len(self.setting_list) > 0:
+			print "[Report] Waiting time"
+                        myreport.report_waiting_time_by_jobs(self.setting_list, self.output_waiting_time)
+                        print "[Report] Task timeline"
+                        myreport.report_task_timeline_by_jobs(self.setting_list, self.output_task_timeline)
+                        print "[Report] Flow timeline"
+                        myreport.report_flow_timeline_by_jobs(self.setting_list, self.output_flow_timeline)
+			print "[Report] Job Analysis"
+			myreport.report_job_analysis(self.setting_list, self.output_job_analysis)
+		else:
+			print "[Report] Waiting time"
+			myreport.report_waiting_time(self.time_start, self.time_end, self.output_waiting_time)
+			print "[Report] Task timeline"
+			myreport.report_task_timeline(self.time_start, self.time_end, self.output_task_timeline)
+			print "[Report] Flow timeline"
+			myreport.report_flow_timeline(self.time_start, self.time_end, self.output_flow_timeline)
 
 		print "[Time] Start  :", datetime.datetime.fromtimestamp(self.time_start).strftime('%Y-%m-%d %H:%M:%S')
 		print "[Time] End    :", datetime.datetime.fromtimestamp(self.time_end).strftime('%Y-%m-%d %H:%M:%S')
 		print "[Time] Elapsed:", self.time_end - self.time_start, "sec"
 
-	def clean(self, setting_list):
-		for setting in setting_list:
+	def clean(self):
+		for setting in self.setting_list:
                 	myjob.clean_job(setting)
 
 def main(argv):

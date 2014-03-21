@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import threading
 import sys
 import os
 import argparse
@@ -98,7 +99,8 @@ def submit_async(setting):
 		
 def submit(setting):
 	cmd = generate_command(setting)	
-	print cmd
+	#print cmd
+	print_job_detail(setting)
 	os.system("mkdir -p %s" % setting['log_dir'])
 	Command(cmd).run()
 	return setting
@@ -107,6 +109,15 @@ def submit_multiple(setting_list):
 	for setting in setting_list:
 		submit_async(setting)
 	wait_completion(setting_list)
+
+def submit_threads(setting_set):
+	submitter_list = []
+        for (job, setting_list) in setting_set.iteritems():
+                submitter = JobSubmitter(setting_list)
+                submitter.start()
+                submitter_list.append(submitter)
+	for submitter in submitter_list:
+		submitter.join()
 
 def wait_completion(setting_list):
 	check_times = 0
@@ -131,6 +142,14 @@ def wait_completion(setting_list):
 def clean_job(setting):
 	cmd = "%s/bin/hadoop dfs -rm -r %s" % (setting['hadoop_dir'], setting['job_output'])
 	Command(cmd).run()
+
+class JobSubmitter (threading.Thread):
+    def __init__(self, setting_list):
+        threading.Thread.__init__(self)
+	self.setting_list = setting_list
+    def run(self):
+	for setting in self.setting_list:
+		submit(setting)	
 
 def main(argv):
 	parser = argparse.ArgumentParser(description='Configuration generator')

@@ -63,8 +63,12 @@
         <value>false</value>
     </property>
     <property>
+    	<name>yarn.app.mapreduce.am.resource.mb</name>
+    	<value>1024</value>
+    </property>
+    <property>
         <name>mapreduce.job.maps</name>
-        <value>16</value>
+        <value>8</value>
     </property>
     <property>
         <name>mapreduce.job.reduces</name>

@@ -41,6 +41,7 @@ class HistoryServer():
 		reduce_list = []
 	
 		task_job_mapping = {}
+		task_job_id_mapping = {}
 
 		for job_id in job_list:	
 			task_list = self.get_task_list(job_id)
@@ -48,6 +49,7 @@ class HistoryServer():
 			job_name = job_detail["name"]
 			for task_id in task_list:
 				task_job_mapping[task_id] = job_name
+				task_job_id_mapping[task_id] = job_id
 				task_counter = self.get_task_time_counters(job_id, task_id)
 				(taskMapStartTime, taskMapEndTime, taskReduceStartTime, taskReduceEndTime, taskReduceShuffleTime, taskReduceMergeTime) = self.get_task_time_counters(job_id, task_id)
 				if "m" in task_id:
@@ -60,7 +62,7 @@ class HistoryServer():
 					reduceShuffleTime[task_id] = taskReduceShuffleTime
 					reduceMergeTime[task_id] = taskReduceMergeTime 
 					reduce_list.append(task_id)
-		return (task_job_mapping, map_list, reduce_list, mapStartTime, mapEndTime, reduceStartTime, reduceEndTime, reduceShuffleTime, reduceMergeTime)
+		return (task_job_mapping, task_job_id_mapping, map_list, reduce_list, mapStartTime, mapEndTime, reduceStartTime, reduceEndTime, reduceShuffleTime, reduceMergeTime)
 		
 	# at attempt level
 	# only second accuracy
@@ -168,12 +170,16 @@ class HistoryServer():
 
 		map_task_list = []
 		reduce_task_list = []
-		for task in tasks_json['tasks']['task']:
-			if task['state'] == "SUCCEEDED":
-				if task['type'] == "MAP":
-					map_task_list.append(task['id'])
-				elif task['type'] == "REDUCE":
-					reduce_task_list.append(task['id'])
+		try:
+			for task in tasks_json['tasks']['task']:
+				if task['state'] == "SUCCEEDED":
+					if task['type'] == "MAP":
+						map_task_list.append(task['id'])
+					elif task['type'] == "REDUCE":
+						reduce_task_list.append(task['id'])
+		except:
+			print "Unable to get task list for job:", job_id
+
 		task_list = []
 		if type is None or type.lower() == "map":
 			for task in map_task_list:
@@ -197,6 +203,8 @@ class HistoryServer():
 
 		counters = {}
 		counters['name'] = job_json["job"]["name"]
+		counters['mapsTotal'] = job_json["job"]["mapsTotal"]
+		counters['reducesTotal'] = job_json["job"]["reducesTotal"]
 		counters['startTime'] = job_json["job"]["startTime"]/1000.0
 		counters['finishTime'] = job_json["job"]["finishTime"]/1000.0
 		return counters

@@ -29,7 +29,7 @@ Measurement
 * Resource contention: python2.7 measure_contention.py -d results/contention_4c -m decoupled
 
 Measure flow
-* Flow demand: python2.7 measure_flow_demand.py -d results/flowdemand_fecoupled_1c1s -m decoupled
+* Flow demand: python2.7 measure_flow_demand.py -d results/flowdemand_decoupled_1c1s -m decoupled
 * Flow capability (computing): python2.7 measure_computing_flow_capability.py -d results/computing-flow-capability -m decoupled
 * Flow capability (storage): python2.7 measure_storage_flow_capability.py -d results/storage-flow-coapability -m decoupled
 
