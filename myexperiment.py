@@ -32,6 +32,7 @@ class Experiment():
 		self.output_flow_timeline = "%s/flow_timeline.csv" % output_directory
 		self.output_task_timeline = "%s/task_timeline.csv" % output_directory
 		self.output_job_analysis = "%s/job_analysis.csv" % output_directory
+		self.output_progress_timeline = "%s/progress_timeline.csv" % output_directory
 	
 	def addJob(self, setting):
 		self.setting_list.append(setting)
@@ -57,6 +58,8 @@ class Experiment():
                         myreport.report_flow_timeline_by_jobs(self.setting_list, self.output_flow_timeline)
 			print "[Report] Job Analysis"
 			myreport.report_job_analysis(self.setting_list, self.output_job_analysis)
+			print "[Report] Progress Analysis"
+			myreport.report_progress_timeline_by_jobs(self.setting_list, self.output_progress_timeline)
 		else:
 			print "[Report] Waiting time"
 			myreport.report_waiting_time(self.time_start, self.time_end, self.output_waiting_time)

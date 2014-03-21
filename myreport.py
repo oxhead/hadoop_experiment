@@ -61,7 +61,7 @@ def report_job_analysis(aList, output_file):
 				map_flow_in.append(task_detail['flow_in'])
 				map_flow_out.append(task_detail['flow_out'])
 				map_elapsed_time.append(task_detail['elapsedTime'])
-				map_waiting_time.append(task_detail['waitingTime'])	
+				map_waiting_time.append(task_detail['waitingTime']/1000000000.0)	
 			elif "r" in task_id:
 				reduce_flow_in.append(task_detail['flow_in'])
                                 reduce_flow_out.append(task_detail['flow_out'])
@@ -98,7 +98,6 @@ def report_flow_demand_by_jobs(setting_list, output_file):
 	fd = open(output_file, "w")
         fd.write("task,id,type,elpased_time,flow_in,flow_out\n")
 
-        job_list = hs.get_job_list()
 	for job_id in job_id_list:
 		job_detail = hs.get_job_detail(job_id)
 		task_list = hs.get_task_list(job_id)
@@ -197,6 +196,13 @@ def report_weak_scaling_by_jobs(setting_list, output_file):
 	fd.flush()
 	fd.close()
 		
+def report_progress_timeline_by_jobs(setting_list, output_file):
+	job_id_list = []
+        for setting in setting_list:
+                job_ids = mylog.lookup_job_ids(setting['job_log'])
+                job_id_list.extend(job_ids)
+        create_progress_timeline(get_history_server(), job_id_list, output_file)
+
 def report_waiting_time(time_start, time_end, output_file):
 	hs = get_history_server()
 	job_list = hs.get_job_list(time_start, time_end)
@@ -288,7 +294,7 @@ def create_waiting_time(hs, jobs, output_file):
 
 
 def create_task_timeline(hs, jobs, output_file):
-        (task_job_mapping, task_job_id_mapping, ap_list, reduce_list, mapStartTime, mapEndTime, reduceStartTime, reduceEndTime, reduceShuffleTime, reduceMergeTime) = hs.get_time_counters(jobs)
+        (task_job_mapping, task_job_id_mapping, map_list, reduce_list, mapStartTime, mapEndTime, reduceStartTime, reduceEndTime, reduceShuffleTime, reduceMergeTime) = hs.get_time_counters(jobs)
 
         runningMaps = {}
         shufflingReduces = {}
@@ -465,6 +471,87 @@ def create_task_detail_timeline(hs, jobs, output_file):
 			f.write(",%s,%s,%s,%s" % (timeline[0][t], timeline[1][t], timeline[2][t], timeline[3][t]))
 		f.write(",%s,%s,%s,%s\n" % (total_map, total_shuffle, total_merge, total_reduce))
 			
+        f.close()
+
+def create_progress_timeline(hs, jobs, output_file, aggregate=False):
+	(task_job_mapping, task_job_id_mapping, map_list, reduce_list, mapStartTime, mapEndTime, reduceStartTime, reduceEndTime, reduceShuffleTime, reduceMergeTime) = hs.get_time_counters(jobs)
+
+	job_name_mapping = {}
+	if aggregate:
+		for job in jobs:
+			job_detail = hs.get_job_detail(job)
+			job_name_mapping[job] = job_detail['name']
+		
+
+        startTime = min(
+                reduce(min, mapStartTime.values()),
+                reduce(min, reduceStartTime.values()))
+        endTime = max(
+                reduce(max, mapEndTime.values()),
+                reduce(max, reduceEndTime.values()))
+
+	# initialize
+	total_timeline = {}
+        job_timeline = {}
+	for t in range(startTime, endTime):
+		total_timeline[t] = 0
+        for job in jobs:
+		throughput = {}
+                for t in range(startTime, endTime):
+			throughput[t] = 0
+		job_key = job_name_mapping[job] if aggregate else job
+                job_timeline[job_key] = throughput
+
+	# value extraction
+        for mapper in mapStartTime.keys():
+		job_key = job_name_mapping[task_job_id_mapping[mapper]] if aggregate else task_job_id_mapping[mapper]
+                task_detail = hs.get_task_detail(task_job_id_mapping[mapper], mapper)
+		bytes_processed = task_detail['BYTES_READ'] if "MAP" == task_detail['type'] else task_detail['BYTES_WRITTEN']
+		bytes_per_second = bytes_processed / float(mapEndTime[mapper] - mapStartTime[mapper])
+                for t in range(mapStartTime[mapper], mapEndTime[mapper]):
+                        job_timeline[job_key][t] += bytes_per_second
+
+        for reducer in reduceStartTime.keys():
+		job_key = job_name_mapping[task_job_id_mapping[reducer]] if aggregate else task_job_id_mapping[reducer]
+                task_detail = hs.get_task_detail(task_job_id_mapping[reducer], reducer)
+                bytes_processed = task_detail['BYTES_READ'] if "MAP" == task_detail['type'] else task_detail['BYTES_WRITTEN']
+		bytes_per_second = bytes_processed / float(reduceEndTime[reducer] - reduceStartTime[reducer])
+                for t in range(reduceMergeTime[reducer], reduceEndTime[reducer]):
+			job_timeline[job_key][t] += bytes_per_second
+
+	#accumulate
+	for (job_key, timeline) in job_timeline.iteritems():
+		for t in range(startTime, endTime-1):
+			timeline[t+1] += timeline[t]
+	for (job_key, timeline) in job_timeline.iteritems():
+		for t in range(startTime, endTime):
+			total_timeline[t] += timeline[t]
+
+        f = open(output_file, "w")
+        f.write("time")
+        for job_key in job_timeline.keys():
+                f.write(",%s" % job_key)
+	f.write(",total_throughput")
+	for job_key in job_timeline.keys():
+                f.write(",%s" % job_key)
+        f.write(",total_progress")
+	f.write("\n")
+	
+        for t in range(startTime, endTime):
+                timestamp = datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d %H:%M:%S')
+                f.write(timestamp)
+		for job_key in job_timeline.keys():
+			throughput_timeline = job_timeline[job_key]
+			throughput = throughput_timeline[t]	
+                        f.write(",%s" % throughput)
+		f.write(",%s" %  total_timeline[t])
+		for job_key in job_timeline.keys():
+                        throughput_timeline = job_timeline[job_key]
+                        progress = throughput_timeline[t] / float(throughput_timeline[endTime-1])
+                        f.write(",%s" % progress)
+                f.write(",%s" %  (total_timeline[t]/total_timeline[endTime-1]))
+		f.write("\n")
+
         f.close()
 
 def main(argv):
