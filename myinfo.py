@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import sys, argparse, requests, json
+import time
 import mylog
 import mycluster
 from node_list import historyserver
@@ -44,8 +45,11 @@ class HistoryServer():
 		task_job_id_mapping = {}
 
 		for job_id in job_list:	
-			task_list = self.get_task_list(job_id)
 			job_detail = self.get_job_detail(job_id)
+			task_list = self.get_task_list(job_id)
+			if job_detail is None or task_list is None:
+				print "Unable to get data for job", job_id
+				continue
 			job_name = job_detail["name"]
 			for task_id in task_list:
 				task_job_mapping[task_id] = job_name
@@ -78,7 +82,7 @@ class HistoryServer():
                 attempt_list_json = requests.get(attempt_list_url)
                 for attempt in attempt_list_json.json()["taskAttempts"]["taskAttempt"]:
                         attempt_url = attempt_list_url + "/" + attempt["id"]
-                        attempt_json = requests.get(attempt_url)
+                        attempt_json = attempt_json = requests.get(attempt_url)
 			json_content = attempt_json.json()
                         attempt_id = json_content["taskAttempt"]["id"]
                         attempt_type = json_content["taskAttempt"]["type"]
@@ -95,6 +99,8 @@ class HistoryServer():
                                 reduceEndTime = int(attempt_endTime)/1000
                                 reduceShuffleTime = int(attempt_shuffleTime)/1000
                                 reduceMergeTime = int(attempt_mergeTime)/1000
+			attempt_json.close()
+		attempt_list_json.close()
 		return (mapStartTime, mapEndTime, reduceStartTime, reduceEndTime, reduceShuffleTime, reduceMergeTime)
 	
 	# only at task level, but not task attempt level
@@ -102,6 +108,7 @@ class HistoryServer():
 		task_url = self.get_task_url(job_id, task_id)
 		task_json_response = requests.get(task_url)
 		task_json = task_json_response.json()
+		task_json_response.close()
 		if task_json["task"]["state"] != "SUCCEEDED":
 			return;
 
@@ -113,6 +120,7 @@ class HistoryServer():
 		counters_url = "%s/counters" % task_url
 		counters_json_response = requests.get(counters_url)
 		counters_json = counters_json_response.json()
+		counters_json_response.close()
 
 		# initialize
 		counters['MAP_OUTPUT_MATERIALIZED_BYTES'] = 0
@@ -128,7 +136,7 @@ class HistoryServer():
 						if counter['name'] == "BYTES_READ":
 							counters['BYTES_READ'] = counter['value']
 					elif counter_group['counterGroupName'] == "my":
-						if counter['name'] == "time_read_in":
+						if counter['name'] == "map_waiting_time":
 							counters['waitingTime'] = counter['value']
 				elif "REDUCE" == counters["type"]:
 					if counter_group['counterGroupName'] == "org.apache.hadoop.mapreduce.FileSystemCounter":
@@ -139,6 +147,9 @@ class HistoryServer():
 					elif counter_group['counterGroupName'] == "org.apache.hadoop.mapreduce.lib.output.FileOutputFormatCounter":
 						if counter['name'] == "BYTES_WRITTEN":
 							counters['BYTES_WRITTEN'] = counter['value']
+					elif counter_group['counterGroupName'] == "my":
+                                                if counter['name'] == "reduce_waiting_time":
+                                                        counters['waitingTime'] = counter['value']
 
 		return counters
 
@@ -156,6 +167,7 @@ class HistoryServer():
 			jobs = job_list_json.json()["jobs"]["job"]
 		except:
 			print "Unable to retrieve job lists at", job_list_query_url
+		job_list_json.close()
 		job_list = []
 		for job in jobs:
 			if job["state"] == "SUCCEEDED":
@@ -166,20 +178,20 @@ class HistoryServer():
 	def get_task_list(self, job_id, type=None):
 		tasks_url = "%s/tasks" % self.get_job_url(job_id);
 		tasks_json_response = requests.get(tasks_url)
+		if tasks_json_response.status_code != 200:
+			print "Unable to get task list for job:", job_id
+			return None
 		tasks_json = tasks_json_response.json()
+		tasks_json_response.close()
 
 		map_task_list = []
 		reduce_task_list = []
-		try:
-			for task in tasks_json['tasks']['task']:
-				if task['state'] == "SUCCEEDED":
-					if task['type'] == "MAP":
-						map_task_list.append(task['id'])
-					elif task['type'] == "REDUCE":
-						reduce_task_list.append(task['id'])
-		except:
-			print "Unable to get task list for job:", job_id
-
+		for task in tasks_json['tasks']['task']:
+			if task['state'] == "SUCCEEDED":
+				if task['type'] == "MAP":
+					map_task_list.append(task['id'])
+				elif task['type'] == "REDUCE":
+					reduce_task_list.append(task['id'])
 		task_list = []
 		if type is None or type.lower() == "map":
 			for task in map_task_list:
@@ -197,9 +209,12 @@ class HistoryServer():
 	def get_job_detail(self, job_id):
 		job_url = "http://%s:%s/ws/v1/history/mapreduce/jobs/%s" % (historyserver_host, historyserver_port, job_id);
 		job_json_response = requests.get(job_url)
+		if job_json_response.status_code != 200:
+			return None	
 		job_json = job_json_response.json()
+		job_json_response.close()
 		if job_json["job"]["state"] != "SUCCEEDED":
-			return;
+			return None;
 
 		counters = {}
 		counters['name'] = job_json["job"]["name"]

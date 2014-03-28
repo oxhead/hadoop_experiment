@@ -19,33 +19,33 @@ import myreport
 import myexperiment
 
 def run(output_directory, model):
-	#job_list = ["terasort", "wordcount", "grep", "nocomputation", "custommap3"]
-	job_list = ["custommap1", "custommap2", "custommap3", "custommap4", "custommap5", "custommap6"]
-	# job_size_list = ["64MB", "128MB", "256MB", "512MB", "1GB", "2GB", "4GB", "8GB"]
-	job_size = "64MB"
+	#job_list = ["terasort", "wordcount", "grep", "nocomputation", "custommap"]
+	job_list = ["terasort", "wordcount", "grep", "nocomputation"]
+	#job_size_list = ["64MB", "128MB", "256MB", "512MB", "1GB", "2GB", "4GB"]
+	job_size_list = ["256MB", "1GB"]
 	map_size = 1024
-	prefix="flow-demand"
+	prefix="test-hadoop"
+	num_computing_nodes = 1
+	num_storage_nodes = 1
 
-	iteration = 5
-
-	configuration = "setting/node_list.py.%s.%sc1s" % (model, 1)
-        myhadoop.switch_configuration(configuration)
-        # wait HDFS to turn off safe mode
+	configuration = "setting/node_list.py.%s.%sc%ss" % (model, num_computing_nodes, num_storage_nodes)
+        myhadoop.switch_configuration(configuration, "Color")
         sleep(60)
-        myhadoop.prepare_data([job_size])
+        myhadoop.prepare_data(job_size_list)
 
 	experiment = myexperiment.Experiment(output_directory)
 	experiment.start()
 	for job in job_list:
-		for i in range(1, iteration+1):
-			prefix_run = "%s-i%s" % (prefix, i)
+		for job_size in job_size_list:
+			prefix_run = prefix
 			real_size = myjob.convert_unit(job_size)
 			num_reducers = 1
-				
-			setting = myjob.get_job_setting(job, map_size=map_size, job_size=real_size, num_reducers=num_reducers, prefix=prefix_run)
-			myjob.submit_async(setting)
-			myjob.wait_completion([setting])
+			job_params = None
+
+			setting = myjob.get_job_setting(job, job_params=job_params, map_size=map_size, job_size=real_size, num_reducers=num_reducers, prefix=prefix_run)
 			experiment.addJob(setting)
+			myjob.submit_async(setting)
+			
 
 	experiment.stop()
 	experiment.clean()

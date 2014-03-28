@@ -21,8 +21,8 @@ import myexperiment
 def run(output_directory, model):
 	#job_list = ["terasort", "wordcount", "grep", "nocomputation", "custommap"]
 	job_list = ["terasort", "wordcount", "grep", "nocomputation"]
-	#job_size_list = ["64MB", "128MB", "256MB", "512MB", "1GB", "2GB"]
-	job_size_list = ["64MB"]
+	job_size_list = ["64MB", "128MB", "256MB", "512MB", "1GB", "2GB"]
+	#job_size_list = ["64MB"]
 	#job_size_list = ["256MB"]
 	map_size = 512
 	prefix="scale-computing-single"
@@ -38,7 +38,7 @@ def run(output_directory, model):
 
 	experiment = myexperiment.Experiment(output_directory)
 	experiment.start()
-	for (job1, job2) in [(x, y) for x in job_list for y in job_list]:
+	for (job1, job2) in [(x, y) if x != y for x in job_list for y in job_list]:
 		for job_size in job_size_list:
 			for i in range(1, iteration+1):
 				prefix_run = "%s-i%s-%s+%s" % (prefix, i, job1, job2)

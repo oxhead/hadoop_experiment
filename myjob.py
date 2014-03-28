@@ -66,16 +66,24 @@ def generate_command(setting):
         elif "grep" == setting['job']:
                 pattern = "hadoop.*"
                 cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar grep -Dmapreduce.job.reduces=%s -Dmapreduce.map.memory.mb=%s %s %s \"%s\" > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['num_reducers'], setting['map_size'], setting['dataset'], setting['job_output'], pattern, setting['job_log'], setting['job_returncode'])
+	elif "grep2" == setting['job']:
+                pattern = ".*hadoop.*"
+                cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar grep -Dmapreduce.job.reduces=%s -Dmapreduce.map.memory.mb=%s %s %s \"%s\" > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['num_reducers'], setting['map_size'], setting['dataset'], setting['job_output'], pattern, setting['job_log'], setting['job_returncode'])
         elif "terasort" == setting['job']:
                 cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar terasort -Dmapreduce.job.reduces=%s -Dmapreduce.map.memory.mb=%s %s %s > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['num_reducers'], setting['map_size'], setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
         elif "nocomputation" == setting['job']:
                 cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar nocomputation -Dmapreduce.job.reduces=%s -Dmapreduce.map.memory.mb=%s %s %s > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['num_reducers'], setting['map_size'], setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
-	elif "custommap" == setting['job']:
+	elif "custommap" in setting['job']:
+		timeout = 1
 		params = setting['job_params']
+		if len(setting['job']) > 9:
+			timeout = int(setting['job'][9:])
+			if params is None:
+				params = {'timeout': timeout, 'num_cpu_workers': timeout, 'num_vm_workers': timeout, 'vm_bytes': str(1024*1024*timeout)}
 		
                 cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar custommap -Dmapreduce.job.reduces=%s -Dmapreduce.map.memory.mb=%s %s %s %s %s %s %s > %s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['num_reducers'], setting['map_size'], setting['dataset'], setting['job_output'], params['timeout'], params['num_cpu_workers'], params['num_vm_workers'], params['vm_bytes'], setting['job_log'], setting['job_returncode'])
+	
 	elif "classification" == setting['job']:
-                #cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar classification -Dmapreduce.job.reduces=%s -Dmapreduce.map.memory.mb=%s %s %s >%s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], setting['num_reducers'], setting['map_size'], setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])
 		num_mapper = setting['job_size'] / 64
 		num_reducer = num_mapper / 8 if num_mapper/8 > 0 else 1
 		cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar classification -m %s -r %s %s %s >%s 2>&1 ; echo $? > %s" % (setting['hadoop_dir'], setting['hadoop_dir'], num_mapper, num_reducer, setting['dataset'], setting['job_output'], setting['job_log'], setting['job_returncode'])

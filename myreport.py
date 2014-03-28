@@ -55,6 +55,8 @@ def report_job_analysis(aList, output_file):
 		reduce_flow_out = []
 		reduce_elapsed_time = []
 		reduce_waiting_time = []
+		if job_detail is None or task_list is None:
+			continue
                 for task_id in task_list:
                         task_detail = hs.get_task_flow_detail(job_id, task_id)
 			if "m" in task_id:
@@ -66,6 +68,7 @@ def report_job_analysis(aList, output_file):
 				reduce_flow_in.append(task_detail['flow_in'])
                                 reduce_flow_out.append(task_detail['flow_out'])
 				reduce_elapsed_time.append(task_detail['elapsedTime'])
+				reduce_waiting_time.append(task_detail['waitingTime']/1000000000.0)
 
 		
 		fd.write("%s,%s,%s,%s" % (job_id, job_detail['name'], job_detail['mapsTotal'], job_detail['reducesTotal']))
@@ -76,10 +79,13 @@ def report_job_analysis(aList, output_file):
 		fd.write(",%s,%s" % (numpy.mean(map_flow_out), numpy.std(map_flow_out)))
 		fd.write(",%s,%s" % (numpy.mean(map_waiting_time), numpy.std(map_waiting_time)))
 		fd.write(",%s,%s" % (numpy.mean(reduce_elapsed_time), numpy.std(reduce_elapsed_time)))
-		fd.write(",%s,%s" % (0, 0))
+		if len(reduce_elapsed_time) != 0:
+			fd.write(",%s,%s" % (numpy.min(reduce_elapsed_time), numpy.max(reduce_elapsed_time)))
+		else:
+			fd.write(",%s,%s" % (0, 0))
 		fd.write(",%s,%s" % (numpy.mean(reduce_flow_in), numpy.std(reduce_flow_in)))
 		fd.write(",%s,%s" % (numpy.mean(reduce_flow_out), numpy.std(reduce_flow_out)))
-		fd.write(",%s,%s" % (0, 0))
+		fd.write(",%s,%s" % (numpy.mean(reduce_waiting_time), numpy.std(reduce_waiting_time)))
 		fd.write("\n")
 			#numpy.min(reduce_elapsed_time), numpy.max(reduce_elapsed_time), \
 			#numpy.mean(reduce_waiting_time), numpy.std(reduce_waiting_time)
@@ -267,29 +273,35 @@ def create_waiting_time(hs, jobs, output_file):
 	task_list = {}
 
 	for job_id in jobs:
-		task_id_list = hs.get_task_list(job_id, "map")
+		task_id_list = hs.get_task_list(job_id)
+		if task_id_list is None:
+			continue
 		for task_id in task_id_list:
 			task_detail = hs.get_task_detail(job_id, task_id)
 			task_list[task_id] = task_detail
 
-	waitingTime = {}
-	waitingPercentage = {}
+	mapWaitingTime = {}
+	reduceWaitingTime = {}
 	startTime = int(min([value['startTime'] for (key, value) in task_list.iteritems()]))
 	endTime = int(max([value['finishTime'] for (key, value) in task_list.iteritems()]))
 
 	for t in range(startTime, endTime):
-		waitingTime[t] = 0.0
+		mapWaitingTime[t] = 0.0
+		reduceWaitingTime[t] = 0.0
 	
 	for task_id in task_list.keys():
 		if "waitingTime" not in task_list[task_id]:
 			print "missing waiting time counter: %s" % task_id
 			continue
 		for t in range(int(task_list[task_id]['startTime']), int(task_list[task_id]['finishTime'])):
-			waitingTime[t] += task_list[task_id]['waitingTime']/1000000000.0 / (task_list[task_id]['finishTime'] - task_list[task_id]['startTime'])
+			if 'm' in task_id: 
+				mapWaitingTime[t] += task_list[task_id]['waitingTime']/1000000000.0 / (task_list[task_id]['finishTime'] - task_list[task_id]['startTime'])
+			elif 'r' in task_id:
+				reduceWaitingTime[t] += task_list[task_id]['waitingTime']/1000000000.0 / (task_list[task_id]['finishTime'] - task_list[task_id]['startTime'])
 
-	f.write("time,waiting_time\n")
+	f.write("time,map_waiting_time,reduce_waiting_time,total_waiting_time\n")
 	for t in range(startTime, endTime):
-		f.write("%s,%s\n" % (datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d %H:%M:%S'), waitingTime[t])) 
+		f.write("%s,%s,%s,%s\n" % (datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d %H:%M:%S'), mapWaitingTime[t], reduceWaitingTime[t], mapWaitingTime[t]+reduceWaitingTime[t])) 
 	f.close()
 
 
@@ -512,6 +524,9 @@ def create_progress_timeline(hs, jobs, output_file, aggregate=False):
                         job_timeline[job_key][t] += bytes_per_second
 
         for reducer in reduceStartTime.keys():
+		period = reduceEndTime[reducer] - reduceStartTime[reducer]
+		if period == 0:
+			continue
 		job_key = job_name_mapping[task_job_id_mapping[reducer]] if aggregate else task_job_id_mapping[reducer]
                 task_detail = hs.get_task_detail(task_job_id_mapping[reducer], reducer)
                 bytes_processed = task_detail['BYTES_READ'] if "MAP" == task_detail['type'] else task_detail['BYTES_WRITTEN']
@@ -529,10 +544,10 @@ def create_progress_timeline(hs, jobs, output_file, aggregate=False):
 
         f = open(output_file, "w")
         f.write("time")
-        for job_key in job_timeline.keys():
+        for job_key in sorted(job_timeline.keys()):
                 f.write(",%s" % job_key)
 	f.write(",total_throughput")
-	for job_key in job_timeline.keys():
+	for job_key in sorted(job_timeline.keys()):
                 f.write(",%s" % job_key)
         f.write(",total_progress")
 	f.write("\n")
@@ -540,12 +555,12 @@ def create_progress_timeline(hs, jobs, output_file, aggregate=False):
         for t in range(startTime, endTime):
                 timestamp = datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d %H:%M:%S')
                 f.write(timestamp)
-		for job_key in job_timeline.keys():
+		for job_key in sorted(job_timeline.keys()):
 			throughput_timeline = job_timeline[job_key]
 			throughput = throughput_timeline[t]	
                         f.write(",%s" % throughput)
 		f.write(",%s" %  total_timeline[t])
-		for job_key in job_timeline.keys():
+		for job_key in sorted(job_timeline.keys()):
                         throughput_timeline = job_timeline[job_key]
                         progress = throughput_timeline[t] / float(throughput_timeline[endTime-1])
                         f.write(",%s" % progress)

@@ -41,4 +41,7 @@ def lookup_scheduler(scheduler):
 	elif scheduler.lower() == "balancing":
                 scheduler_class = "org.apache.hadoop.yarn.server.resourcemanager.scheduler.flow.FlowScheduler"
                 scheduler_parameter = "yarn.scheduler.flow.assignment.model=Balancing"
+	elif scheduler.lower() == "color":
+		scheduler_class = "org.apache.hadoop.yarn.server.resourcemanager.scheduler.flow.FlowScheduler"
+		scheduler_parameter = "yarn.scheduler.flow.assignment.model=Color"
 	return (scheduler_class, scheduler_parameter)

@@ -39,6 +39,41 @@
   </property>
 
   <property>
+      <name>yarn.scheduler.flow.flowrate.nocomputation</name>
+      <value>16.2,0,0,0</value>
+  </property>
+
+  <property>
+      <name>yarn.scheduler.flow.flowrate.custommap.1</name>
+      <value>9.3,0,0,0</value>
+  </property>
+
+  <property>
+      <name>yarn.scheduler.flow.flowrate.custommap.2</name>
+      <value>5.4,0,0,0</value>
+  </property>
+
+  <property>
+      <name>yarn.scheduler.flow.flowrate.custommap.3</name>
+      <value>3.6,0,0,0</value>
+  </property>
+
+  <property>
+      <name>yarn.scheduler.flow.flowrate.custommap.4</name>
+      <value>2.6,0,0,0</value>
+  </property>
+
+  <property>
+        <name>yarn.scheduler.flow.flowrate.custommap.5</name>
+        <value>2.0,0,0,0</value>
+  </property>
+
+  <property>
+        <name>yarn.scheduler.flow.flowrate.custommap.6</name>
+        <value>1.7,0,0,0</value>
+  </property>
+
+  <property>
     <name>yarn.scheduler.flow.flowrate.nodes</name>
     <value>power:120,bc1:80</value>
   </property>

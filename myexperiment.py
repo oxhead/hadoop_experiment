@@ -51,15 +51,30 @@ class Experiment():
 	
 		if len(self.setting_list) > 0:
 			print "[Report] Waiting time"
-                        myreport.report_waiting_time_by_jobs(self.setting_list, self.output_waiting_time)
+			try:
+                        	myreport.report_waiting_time_by_jobs(self.setting_list, self.output_waiting_time)
+			except:
+				print "Failed to create report"
                         print "[Report] Task timeline"
-                        myreport.report_task_timeline_by_jobs(self.setting_list, self.output_task_timeline)
+			try:
+                        	myreport.report_task_timeline_by_jobs(self.setting_list, self.output_task_timeline)
+			except:
+                                print "Failed to create report"
                         print "[Report] Flow timeline"
-                        myreport.report_flow_timeline_by_jobs(self.setting_list, self.output_flow_timeline)
+                        try:
+				myreport.report_flow_timeline_by_jobs(self.setting_list, self.output_flow_timeline)
+			except:
+                                print "Failed to create report"
 			print "[Report] Job Analysis"
-			myreport.report_job_analysis(self.setting_list, self.output_job_analysis)
+			try:
+				myreport.report_job_analysis(self.setting_list, self.output_job_analysis)
+			except:
+                                print "Failed to create report"
 			print "[Report] Progress Analysis"
-			myreport.report_progress_timeline_by_jobs(self.setting_list, self.output_progress_timeline)
+			try:
+				myreport.report_progress_timeline_by_jobs(self.setting_list, self.output_progress_timeline)
+			except Exception, e:
+                                print "Failed to create report:", e
 		else:
 			print "[Report] Waiting time"
 			myreport.report_waiting_time(self.time_start, self.time_end, self.output_waiting_time)
