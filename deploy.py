@@ -16,7 +16,10 @@ def deploy(user, parameters=None):
 		'hadoop.runtime.dir=/home/%s/hadoop_runtime' % user,
 		'yarn.scheduler.minimum-allocation-mb=512',
 		'io.file.buffer.size=4096',
-		'yarn.scheduler.flow.assignment.model=Flow'
+		'yarn.scheduler.flow.assignment.model=Flow',
+		'mapreduce.job.reduce.slowstart.completedmaps=0.05',
+		'mapreduce.reduce.shuffle.parallelcopies=5',
+		'dfs.replication=3',
 	] 
 	if parameters is not None:
 		for str in parameters:

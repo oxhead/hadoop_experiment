@@ -26,6 +26,15 @@
         <value>${hadoop.mapreduce.dir}/local</value>
         <description>store intermediate data</description>
     </property>
+    <property>
+    	<name>yarn.app.mapreduce.am.staging-dir</name>
+        <value>/user</value>
+        <!--<value>${hadoop.storage}/staging</value>-->
+    </property>
+    <property>
+    	<name>mapreduce.jobhistory.move.interval-ms</name>
+    	<value>60000</value>
+    </property>
 
 <!--
     <property>
@@ -67,11 +76,24 @@
     	<value>1024</value>
     </property>
     <property>
+    	<name>mapred.child.java.opts</name>
+    	<value>-Xmx512m</value>
+    </property>
+    <property>
         <name>mapreduce.job.maps</name>
         <value>8</value>
     </property>
     <property>
         <name>mapreduce.job.reduces</name>
         <value>${mapreduce.job.reduces}</value>
+    </property>
+    <property>
+    	<name>mapreduce.job.reduce.slowstart.completedmaps</name>
+    	<value>${mapreduce.job.reduce.slowstart.completedmaps}</value>
+    </property>
+    <property>
+    	<name>mapreduce.reduce.shuffle.parallelcopies</name>
+    	<value>${mapreduce.reduce.shuffle.parallelcopies}</value>
+    	<description>The concurrent thread to fetch intermediate data from map tasks</description>
     </property>
 </configuration>

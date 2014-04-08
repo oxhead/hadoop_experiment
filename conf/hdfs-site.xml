@@ -41,7 +41,7 @@
     </property>
     <property>
         <name>dfs.replication</name>
-	<value>3</value>
+	<value>${dfs.replication}</value>
 	<final>true</final>
     </property>
     <property>

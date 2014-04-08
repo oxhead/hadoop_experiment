@@ -53,23 +53,23 @@ class Experiment():
 			print "[Report] Waiting time"
 			try:
                         	myreport.report_waiting_time_by_jobs(self.setting_list, self.output_waiting_time)
-			except:
-				print "Failed to create report"
+			except Exception as e:
+				print "Failed to create report:", e
                         print "[Report] Task timeline"
 			try:
                         	myreport.report_task_timeline_by_jobs(self.setting_list, self.output_task_timeline)
-			except:
-                                print "Failed to create report"
+			except Exception as e:
+                                print "Failed to create report:", e
                         print "[Report] Flow timeline"
                         try:
 				myreport.report_flow_timeline_by_jobs(self.setting_list, self.output_flow_timeline)
-			except:
-                                print "Failed to create report"
+			except Exception as e:
+                               print "Failed to create report:", e
 			print "[Report] Job Analysis"
 			try:
 				myreport.report_job_analysis(self.setting_list, self.output_job_analysis)
-			except:
-                                print "Failed to create report"
+			except Exception as e:
+                                print "Failed to create report:", e
 			print "[Report] Progress Analysis"
 			try:
 				myreport.report_progress_timeline_by_jobs(self.setting_list, self.output_progress_timeline)

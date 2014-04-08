@@ -14,6 +14,7 @@ def get_history_server():
 	hs = myinfo.HistoryServer(node_list.historyserver['host'], node_list.historyserver['port'])
 	return hs
 
+# backward compatible
 def parse_job_id_list(aList):
 	job_id_list = []
         for object in aList:
@@ -345,20 +346,37 @@ def create_task_timeline(hs, jobs, output_file):
 		f.write("%s,%s,%s,%s,%s\n" % (timestamp, runningMaps[t], shufflingReduces[t], mergingReduces[t], runningReduces[t]))
         f.close()
 
-
 def create_flow_timeline(hs, jobs, output_file):
 	flow_in_table = {
 		"terasort": 6.2,
-		"grep": 13.8,
+		"grep": 13.2,
 		"word count": 3.6,
-		"custommap": 6.8,
+		"nocomputation": 16.2,
+		"histogram-movies": 10.3,
+		"histogram-ratings": 3.4,
+		"inverted-index": 3.0,
+		"custommap_1": 9.3,
+		"custommap_2": 5.4,
+		"custommap_3": 3.6,
+		"custommap_4": 2.6,
+		"custommap_5": 2.0,
+		"custommap_6": 1.7,
 		"default": 5,
 	}
 	flow_out_table = {
-		"terasort": 9.5,
+		"terasort": 9.6,
                 "grep": 0,
-                "word count": 3.8,
-		"custommap": 0,
+                "word count": 3.7,
+		"nocomputation": 0,
+		"histogram-movies": 0,
+		"histogram-ratings": 0,
+		"inverted-index": 3.4,
+		"custommap_1": 0,
+		"custommap_2": 0,
+		"custommap_3": 0,
+		"custommap_4": 0,
+		"custommap_5": 0,
+		"custommap_6": 0,
                 "default": 0,
         }
 

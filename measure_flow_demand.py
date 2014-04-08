@@ -20,13 +20,16 @@ import myexperiment
 
 def run(output_directory, model):
 	#job_list = ["terasort", "wordcount", "grep", "nocomputation", "custommap3"]
-	job_list = ["custommap1", "custommap2", "custommap3", "custommap4", "custommap5", "custommap6"]
+	#job_list = ["custommap1", "custommap2", "custommap3", "custommap4", "custommap5", "custommap6"]
+	job_list = ["terasort", "wordcount", "grep", "nocomputation", "custommap1", "custommap2", "custommap3", "custommap4", "custommap5", "custommap6", "histogrammovies", "histogramratings", "invertedindex"]
+	#job_list = ["invertedindex", "grep", "wordcount", "terasort"]
+
 	# job_size_list = ["64MB", "128MB", "256MB", "512MB", "1GB", "2GB", "4GB", "8GB"]
 	job_size = "64MB"
 	map_size = 1024
 	prefix="flow-demand"
 
-	iteration = 5
+	iteration = 1
 
 	configuration = "setting/node_list.py.%s.%sc1s" % (model, 1)
         myhadoop.switch_configuration(configuration)

@@ -8,6 +8,7 @@ import datetime
 import time
 import random
 import numpy
+import itertools
 
 import myjob
 import mylog
@@ -20,28 +21,33 @@ import myexperiment
 import job_factory
 
 def run(output_directory, model):
-	scheduler_list = ["Color", "Fifo"] 
+	scheduler_list = ["ColorStorage", "Fifo"] 
 	#scheduler_list = ["Fifo", "Color"]
 	#scheduler_list = ["Color"]
 
-	#job_list = ["terasort", "wordcount", "grep", "nocomputation"]
-	job_list = ["grep", "terasort"]
+	job_list = ["histogrammovies", "histogramratings"]
+	#job_list = ["grep", "terasort", "wordcount", "nocomputation", "custommap4", "custommap6"]
 	#job_size_list = ["64MB", "128MB", "256MB", "512MB", "1GB", "2GB", "4GB"]
 	job_size_list = ["8GB"]
 	submit_times = 10
 
-	#job_submit_timeline = job_factory.create_fixed_jobs(job_list=job_list, job_size_list=job_size_list, submit_times=submit_times)
-	job_submit_timeline = job_factory.create_duplicate_jobs(job_list=job_list, job_size_list=job_size_list, submit_times=submit_times)
+	job_combination_list = itertools.combinations(job_list, 2)
+
+	for (x, y) in job_combination_list:
+		print "%s+%s" % (x, y)
+		job_list = [x, y]
+		job_submit_timeline = job_factory.create_duplicate_jobs(job_list=job_list, job_size_list=job_size_list, submit_times=submit_times)
 			
-	for scheduler in scheduler_list:
-		output_directory_run = "%s/%s" % (output_directory, scheduler)
-		scheduler_run(job_submit_timeline, output_directory_run, scheduler, model, job_size_list)
+		for scheduler in scheduler_list:
+			output_directory_run = "%s/%s_%s_%s" % (output_directory, scheduler, x, y)
+			scheduler_run(job_submit_timeline, output_directory_run, scheduler, model, job_size_list)
 
 def scheduler_run(job_timeline, output_directory, scheduler, model, job_size_list):
 	map_size = 1024
 	prefix="flow-contention"
-	num_nodes = 4
-	configuration = "setting/node_list.py.%s.%sc%ss" % (model, num_nodes, 1)
+	num_computing_nodes = 2
+	num_storage_nodes = 2
+	configuration = "setting/node_list.py.%s.%sc%ss" % (model, num_computing_nodes, num_storage_nodes)
         myhadoop.switch_configuration(configuration, scheduler)
         # wait HDFS to turn off safe mode
         sleep(60)

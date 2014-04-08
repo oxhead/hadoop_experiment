@@ -20,12 +20,9 @@ import myexperiment
 import job_factory
 
 def run(output_directory, model):
-	#scheduler_list = ["Color", "Fifo"] 
-	#scheduler_list = ["Fifo", "Color"]
 	scheduler_list = ["ColorStorage", "Fifo"]
 
-	#job_list = ["terasort", "wordcount", "grep", "nocomputation", "custommap1", "custommap2", "custommap3", "custommap4", "custommap5", "custommap6", "histogrammovies", "histogramratings", "invertedindex"]
-	job_list = ["grep", "nocomputation", "histogrammovies", "histogramratings"]
+	job_list = ["histogrammovies", "histogramratings"]
 	#job_size_list = ["64MB", "128MB", "256MB", "512MB", "1GB", "2GB", "4GB"]
 	job_size_list = ["1GB", "2GB", "4GB"]
 	num_jobs = 20

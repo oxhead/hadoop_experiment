@@ -44,6 +44,21 @@
   </property>
 
   <property>
+        <name>yarn.scheduler.flow.flowrate.histogram-movies</name>
+        <value>10.3,0,0,0</value>
+  </property>
+
+  <property>
+        <name>yarn.scheduler.flow.flowrate.histogram-ratings</name>
+        <value>3.4,0,0,0</value>
+  </property>
+
+  <property>
+        <name>yarn.scheduler.flow.flowrate.inverted-index</name>
+        <value>3.0,1.2,3.6,3.4</value>
+  </property>
+
+  <property>
       <name>yarn.scheduler.flow.flowrate.custommap.1</name>
       <value>9.3,0,0,0</value>
   </property>

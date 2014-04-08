@@ -19,42 +19,41 @@ import myreport
 import myexperiment
 
 def run(output_directory, model):
-	job_list = ["terasort", "wordcount", "grep", "nocomputation", "custommap"]
+	#job_list = ["terasort", "wordcount", "grep", "nocomputation", "custommap", "invertedindex", "histogrammovies", "histogramratings"]
+	#job_list = ["invertedindex", "histogrammovies", "histogramratings"]
+	#job_list = ["terasort", "wordcount", "grep", "nocomputation", "custommap1", "custommap2", "custommap3", "custommap4", "custommap5", "custommap6", "histogrammovies", "histogramratings", "invertedindex"]
+	job_list = ["terasort", "grep", "wordcount", "nocomputation", "histogrammovies", "histogramratings", "invertedindex"]
 	job_size_list = ["64MB", "128MB", "256MB", "512MB", "1GB", "2GB", "4GB"]
-	#job_size_list = ["64MB", "128MB"]
+	#job_size_list = ["4GB"]
+	#job_size_list = ["1GB", "2GB", "4GB"]
+	#job_size_list = ["1GB"]
 	map_size = 512
 	prefix="weak-scaling"
 
 	num_computing_nodes = 1
-	num_storage_nodes = 1
+	num_storage_nodes = 2
 	configuration = "setting/node_list.py.%s.%sc%ss" % (model, num_computing_nodes, num_storage_nodes)
-        myhadoop.switch_configuration(configuration)
+        myhadoop.switch_configuration(configuration, "ColorStorage")
         # wait HDFS to turn off safe mode
         sleep(60)
         myhadoop.prepare_data(job_size_list)
 
 	experiment = myexperiment.Experiment(output_directory)
-	#experiment.start()
+	experiment.start()
 	setting_list = []
 	for job in job_list:
-                num_reducers = 8
+                num_reducers = 1
 		job_params = None
-		if job == "custommap":
-                        timeout = 1
-                        job_params = {'timeout': timeout, 'num_cpu_workers': timeout, 'num_vm_workers':'1', 'vm_bytes':str(1024*1024*timeout)}
 		for job_size in job_size_list:
 			real_size = myjob.convert_unit(job_size)
 			prefix_run = prefix
 			
 			setting = myjob.get_job_setting(job, job_params=job_params, map_size=map_size, job_size=real_size, num_reducers=num_reducers, prefix=prefix_run)
-			myjob.submit_async(setting)
-			setting_list.append(setting)
-			myjob.wait_completion([setting])
-		experiment.clean(setting_list)
+			myjob.submit(setting)
+			experiment.addJob(setting)
+		experiment.clean()
 
-	myreport.report_weak_scaling_by_jobs(setting_list, "%s/%s.csv" % (output_directory, prefix))
-
-	#experiment.stop()
+	experiment.stop()
 
 def main(argv):
 	parser = argparse.ArgumentParser(description='Configuration generator')

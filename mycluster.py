@@ -31,3 +31,9 @@ def get_node_list():
 		node_list.append(node.host)
 	return set(node_list)
 
+def get_mapreduce_node_list():
+	cluster = load()
+        node_list = []
+        for node in cluster.mapreduce.getNodeManagers():
+                node_list.append(node.host)
+	return node_list
