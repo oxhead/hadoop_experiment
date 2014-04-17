@@ -28,7 +28,7 @@ python2.7 script/measure_storage.py -d results/measure_storage_4c1s -s Fifo --nu
 
 * Measure weak scaling
 ```
-python2.7 script/measure_weak_scaling.py -d results/measure_computing_1c4s -s Fifo --num_nodes 1 --num_storages 4
+python2.7 script/measure_weak_scaling.py -d results/measure_weak_scaling_1c4s -s Fifo --num_nodes 1 --num_storages 4
 ```
 
 * Compare performance of schedulers

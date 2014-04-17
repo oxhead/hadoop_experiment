@@ -66,12 +66,9 @@ def execute(cluster, service, action):
                 command.execute_remote(user, hdfs.getNameNode().host, cmd)
 
     elif service == "historyserver":
-        logger.info("[Service] %s HistoryServer at %s" % (action, mapreduce.getResourceManager().host))
-        cmd = "%s --config %s --script %s %s historyserver" % (dameon_script, conf_dir, mapreduce_script, action)
-        command.execute_remote(user, mapreduce.getResourceManager().host, cmd)
-
-        for node in mapreduce.getNodeManagers():
+        for node in mapreduce.getNodes():
             logger.info("[Service] %s HistoryServer at %s" % (action, node.host))
+            cmd = "%s --config %s --script %s %s historyserver" % (dameon_script, conf_dir, mapreduce_script, action)
             command.execute_remote(user, node.host, cmd)
 
 def deploy(cluster, conf_dir):
