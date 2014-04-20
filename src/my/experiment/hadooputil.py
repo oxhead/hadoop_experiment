@@ -8,6 +8,7 @@ from my.util import command
 
 logger = logging.getLogger(__name__)
 
+
 def switch_config(setting, format=False):
 
         cluster_config_path = setting.cluster_config_path
@@ -23,7 +24,6 @@ def switch_config(setting, format=False):
         conf_generated = "myconf"
 
         cluster_config = config.get_cluster(cluster_config_path)
-        node_config = config.get_node_config(node_config_path)
         (scheduler_class,
          scheduler_parameter) = helper.lookup_scheduler(scheduler)
 
@@ -32,11 +32,15 @@ def switch_config(setting, format=False):
             'yarn.scheduler.flow.assignment.model': scheduler_parameter,
         }
 
+        addtional_config = dict(setting.parameters.items() + addtional_config.items())
+        logger.debug("additional paremeters: %s", addtional_config)
+
         logger.info("Status: stop Hadoop service")
         service.execute(cluster_config, "all", "stop")
 
         config.generate_config_files(
-            cluster_config_path, node_config_path, conf_dir, conf_generated, addtional_config)
+            cluster_config_path, node_config_path, conf_dir, conf_generated,
+            addtional_config)
 
         logger.info("Status: deploy Hadoop service")
         service.deploy(cluster_config, conf_generated)
@@ -50,9 +54,11 @@ def switch_config(setting, format=False):
 
         logger.info("Status: completed configuring Hadoop")
 
+
 def shutdown(cluster):
     logger.info("Status: shutdown Hadoop service")
     service.execute(cluster, "all", "stop")
+
 
 def prepare_data(cluster, jobs):
         logger.info("Prepaing data")

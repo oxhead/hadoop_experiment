@@ -203,6 +203,7 @@ class HadoopSetting():
         self.cluster_config_path = cluster_config_path
         self.node_config_path = node_config_path
         self.conf_dir = conf_dir
+        self.parameters = parameters
 
 
 class Job(object):

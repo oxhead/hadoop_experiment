@@ -20,12 +20,16 @@ def measure(model, schedulers, num_nodes, num_storages, num_jobs, period, output
 
     env.init()
 
+    parameters = {
+        'mapreduce.job.reduce.slowstart.completedmaps': '0.8',
+    }
+
     cluster_config_path = env.get_cluter_config_path(
         model, num_nodes, num_storages)
     node_config_path = env.get_node_config_path()
     setting = HadoopSetting(
         cluster_config_path, node_config_path, scheduler="Fifo",
-                            model=model, num_nodes=num_nodes, num_storages=num_storages, parameters={})
+                            model=model, num_nodes=num_nodes, num_storages=num_storages, parameters=parameters)
 
     job_list = ["grep", "terasort", "wordcount", "nocomputation", "histogrammovies", "histogramratings", "custommap1"]
     job_size_list = ["1GB", "2GB", "4GB"]
