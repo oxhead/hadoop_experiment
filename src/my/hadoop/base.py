@@ -20,7 +20,7 @@ class Cluster(object):
                 self.mapreduce = mapreduce
                 self.hdfs = hdfs
                 self.history_server = history_server
-                
+
         def getUser(self):
                 return self.user
 

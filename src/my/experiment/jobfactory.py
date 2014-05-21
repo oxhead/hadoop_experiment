@@ -64,6 +64,23 @@ def create_fixed_jobs(job_list=[], job_size_list=[], submit_times=10, log_dir="l
         time_count += submit_times * period
     return job_submit_timeline
 
+def create_ab_jobs(job_list=[], job_size="1GB", submit_times=10, submit_ratio=3, log_dir="log", map_size=1024):
+    job_submit_timeline = {}
+    time_count = 0
+    for i in xrange(1, submit_times * submit_ratio + 1):
+        job_name = job_list[0]
+        job = create_job(job_name, job_size, log_dir=log_dir, map_size=map_size, identifier=i)
+        if time_count not in job_submit_timeline:
+            job_submit_timeline[time_count] = []
+        job_submit_timeline[time_count].append(job)
+    for i in xrange(1, submit_times + 1):
+        job_name = job_list[1]
+        job = create_job(job_name, job_size, log_dir=log_dir, map_size=map_size, identifier=i)
+        if time_count not in job_submit_timeline:
+            job_submit_timeline[time_count] = []
+        job_submit_timeline[time_count].append(job)
+    return job_submit_timeline
+
 def create_all_pair_jobs(job_list=[], job_size_list=[], submit_times=10, log_dir="log", map_size=1024):
     job_submit_timeline = {}
     time_count = 0

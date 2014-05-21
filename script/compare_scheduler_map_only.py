@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 import sys
 import argparse
 import env
@@ -9,19 +8,18 @@ env.init()
 from my.experiment.base import *
 from my.experiment import jobfactory
 
-
 def measure(model, schedulers, num_nodes, num_storages, num_jobs, period, output_dir):
 
     parameters = {
-        'mapreduce.job.reduce.slowstart.completedmaps': '0.8',
+        'mapreduce.job.reduce.slowstart.completedmaps': '1.0',
+        'dfs.replication': '1',
     }
 
-    cluster_config_path = env.get_cluter_config_path(
-        model, num_nodes, num_storages)
+    cluster_config_path = env.get_cluter_config_path(model, num_nodes, num_storages)
     node_config_path = env.get_node_config_path()
     setting = HadoopSetting(cluster_config_path, node_config_path, scheduler="Fifo", model=model, num_nodes=num_nodes, num_storages=num_storages, parameters=parameters)
 
-    job_list = ["grep", "terasort", "wordcount", "nocomputation", "histogrammovies", "histogramratings", "custommap1"]
+    job_list = ["grep", "nocomputation", "histogrammovies", "histogramratings"]
     job_size_list = ["1GB", "2GB", "4GB"]
     job_timeline = jobfactory.create_jobs(job_list=job_list, job_size_list=job_size_list, num_jobs=num_jobs, period=period)
 

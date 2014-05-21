@@ -1,3 +1,4 @@
+import os
 import random
 import logging
 
@@ -78,32 +79,24 @@ def upload_data(cluster, dataset_name, dataset_size):
         hadoop_dir = helper.get_hadoop_dir()
         dataset_dir = helper.get_dataset_dir()
         dataset_source_dir = helper.get_dataset_source_dir()
-        # TODO add strategy support
-        node = cluster.getNodes()[
-            random.randint(0, len(cluster.getNodes()) - 1)]
+        target_dir = "%s_%s" % (dataset_name, dataset_size)
+        rm_host = cluster.getMapReduceCluster().getResourceManager().host
 
-        cmd = None
-        if dataset_name == "wikipedia":
-            command.execute_remote(
-            cluster.getUser(), node.host, "%s/bin/hadoop dfs -mkdir -p %s/wikipedia_%s" % (hadoop_dir, dataset_dir, dataset_size))
-            cmd = "%s/bin/hadoop dfs -put %s/wikipedia_%s/* %s/wikipedia_%s" % (
-                hadoop_dir, dataset_source_dir, dataset_size, dataset_dir, dataset_size)
-        elif dataset_name == "kmeans":
-            command.execute_remote(
-            cluster.getUser(), node.host, "%s/bin/hadoop dfs -mkdir -p %s/kmeans_%s" % (hadoop_dir, dataset_dir, dataset_size))
-            cmd = "%s/bin/hadoop dfs -put %s/kmeans_%s/* %s/kmeans_%s" % (
-                hadoop_dir, dataset_source_dir, dataset_size, dataset_dir, dataset_size)
-        elif dataset_name == "terasort":
+        command.execute_remote(cluster.getUser(), rm_host, "%s/bin/hadoop dfs -mkdir -p %s" % (hadoop_dir, dataset_dir))
+        if dataset_name == "terasort":
             real_size = helper.convert_unit(dataset_size)
             num_rows = real_size * 1024 * 1024 / 100
             num_files = 1 if real_size <= 1024 else real_size / 1024
-            output_dir = "%s/terasort_%s" % (dataset_dir, dataset_size)
-            cmd = "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar teragen -Dmapreduce.job.maps=%s %s  %s" % (
-                hadoop_dir, hadoop_dir, num_files, num_rows, output_dir)
+            output_dir = "%s/%s" % (dataset_dir, target_dir)
+            command.execute_remote(cluster.getUser(), rm_host, "%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar teragen -Dmapreduce.job.maps=%s %s  %s" % (hadoop_dir, hadoop_dir, num_files, num_rows, output_dir))
 
-        command.execute_remote(
-            cluster.getUser(), node.host, "%s/bin/hadoop dfs -mkdir -p %s" % (hadoop_dir, dataset_dir))
-        command.execute_remote(cluster.getUser(), node.host, cmd)
+        else:
+            command.execute_remote(cluster.getUser(), rm_host, "%s/bin/hadoop dfs -mkdir -p %s/%s" % (hadoop_dir, dataset_dir, target_dir))
+            for f in os.listdir(os.path.join(dataset_source_dir, target_dir)):
+                data_nodes = cluster.getHDFSCluster().getDataNodes()
+                node = data_nodes[random.randint(0, len(data_nodes) - 1)]
+                logger.info("upload %s/%s to node %s", target_dir, f, node.host)
+                command.execute_remote(cluster.getUser(), node.host, "%s/bin/hadoop dfs -put %s/%s/%s %s/%s" % (hadoop_dir, dataset_source_dir, target_dir, f, dataset_dir, target_dir))
 
 
 def generate_command(job):

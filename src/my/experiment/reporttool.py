@@ -331,16 +331,17 @@ def report_progress_timeline(cluster, jobs, output_file, aggregate=False):
             throughput[t] = 0
         job_key = job_name_mapping[job.id] if aggregate else job.id
         job_timeline[job_key] = throughput
+    job_id_mapping = {}
+    for job in jobs:
+        job_id_mapping[job.id] = "%s_%s_%s" % (job.id, job.name, job.size)
 
     # value extraction
     for mapper in mapStartTime.keys():
-        job_key = job_name_mapping[task_job_id_mapping[mapper]
-                                   ] if aggregate else task_job_id_mapping[mapper]
+        job_key = job_name_mapping[task_job_id_mapping[mapper]] if aggregate else task_job_id_mapping[mapper]
         task_detail = historytool.get_task_detail(hs, task_job_id_mapping[mapper], mapper)
         bytes_processed = task_detail['BYTES_READ'] if "MAP" == task_detail[
             'type'] else task_detail['BYTES_WRITTEN']
-        bytes_per_second = bytes_processed / \
-            float(mapEndTime[mapper] - mapStartTime[mapper])
+        bytes_per_second = bytes_processed / float(mapEndTime[mapper] - mapStartTime[mapper])
         for t in range(mapStartTime[mapper], mapEndTime[mapper]):
             job_timeline[job_key][t] += bytes_per_second
 
@@ -348,13 +349,10 @@ def report_progress_timeline(cluster, jobs, output_file, aggregate=False):
         period = reduceEndTime[reducer] - reduceStartTime[reducer]
         if period == 0:
             continue
-        job_key = job_name_mapping[task_job_id_mapping[reducer]
-                                   ] if aggregate else task_job_id_mapping[reducer]
+        job_key = job_name_mapping[task_job_id_mapping[reducer]] if aggregate else task_job_id_mapping[reducer]
         task_detail = historytool.get_task_detail(hs, task_job_id_mapping[reducer], reducer)
-        bytes_processed = task_detail['BYTES_READ'] if "MAP" == task_detail[
-            'type'] else task_detail['BYTES_WRITTEN']
-        bytes_per_second = bytes_processed / \
-            float(reduceEndTime[reducer] - reduceStartTime[reducer])
+        bytes_processed = task_detail['BYTES_READ'] if "MAP" == task_detail['type'] else task_detail['BYTES_WRITTEN']
+        bytes_per_second = bytes_processed / float(reduceEndTime[reducer] - reduceStartTime[reducer])
         for t in range(reduceMergeTime[reducer], reduceEndTime[reducer]):
             job_timeline[job_key][t] += bytes_per_second
 
@@ -369,10 +367,10 @@ def report_progress_timeline(cluster, jobs, output_file, aggregate=False):
     f = open(output_file, "w")
     f.write("time")
     for job_key in sorted(job_timeline.keys()):
-        f.write(",%s" % job_key)
+        f.write(",%s" % job_id_mapping[job_key])
     f.write(",total_throughput")
     for job_key in sorted(job_timeline.keys()):
-        f.write(",%s" % job_key)
+        f.write(",%s" % job_id_mapping[job_key])
     f.write(",total_progress")
     f.write("\n")
 
@@ -387,189 +385,13 @@ def report_progress_timeline(cluster, jobs, output_file, aggregate=False):
         f.write(",%s" % total_timeline[t])
         for job_key in sorted(job_timeline.keys()):
             throughput_timeline = job_timeline[job_key]
-            progress = throughput_timeline[t] / \
-                float(throughput_timeline[endTime - 1])
+            progress = throughput_timeline[t] / float(throughput_timeline[endTime - 1])
             f.write(",%s" % progress)
         f.write(",%s" % (total_timeline[t] / total_timeline[endTime - 1]))
         f.write("\n")
 
     f.close()
 
-# support flow-in only
-def report_computing_flow_capability_by_jobs(setting_list, output_file):
-    fd = open(output_file, "w")
-    print >> fd, "job_size", "num_tasks", "elpased_time", "flow_in", "flow_out"
-
-    for i in range(len(setting_list)):
-        setting = setting_list[i]
-        job_id = mylog.lookup_job_ids(setting['job_log'])[0]
-        job_size = setting['job_size']
-        hs = get_history_server()
-
-        totalBytes = 0
-        startTime = sys.maxint
-        finishTime = -1
-        job_detail = hs.get_job_detail(job_id)
-        task_list = hs.get_task_list(job_id, "map")
-        for task_id in task_list:
-            task_detail = hs.get_task_counters(job_id, task_id)
-            startTime = task_detail["startTime"] if task_detail[
-                "startTime"] < startTime else startTime
-            finishTime = task_detail["finishTime"] if task_detail[
-                "finishTime"] > finishTime else finishTime
-            totalBytes = totalBytes + task_detail['BYTES_READ']
-
-        flow_in = (totalBytes / 1024 / 1024) / float(finishTime - startTime)
-        flow_out = 0
-        print >> fd, job_size, len(task_list), finishTime - \
-            startTime, flow_in, flow_out
-        fd.flush()
-    fd.close()
-
-# support flow-out only
-
-
-def report_storage_flow_capability_by_jobs(setting_list, num_nodes, output_file):
-    fd = open(output_file, "w")
-    print >> fd, "num_nodes", "num_tasks", "elpased_time", "flow_in", "flow_out"
-
-    totalBytes = 0
-    startTime = sys.maxint
-    finishTime = -1
-    for i in range(len(setting_list)):
-        setting = setting_list[i]
-        job_id = mylog.lookup_job_ids(setting['job_log'])[0]
-        job_size = setting['job_size']
-        hs = get_history_server()
-        job_detail = hs.get_job_detail(job_id)
-        task_list = hs.get_task_list(job_id, "map")
-        for task_id in task_list:
-            task_detail = hs.get_task_counters(job_id, task_id)
-            startTime = task_detail["startTime"] if task_detail[
-                "startTime"] < startTime else startTime
-            finishTime = task_detail["finishTime"] if task_detail[
-                "finishTime"] > finishTime else finishTime
-            totalBytes = totalBytes + task_detail['BYTES_READ']
-
-    flow_in = 0
-    flow_out = (totalBytes / 1024 / 1024) / float(finishTime - startTime)
-    print >> fd, num_nodes, len(task_list), finishTime - \
-        startTime, flow_in, flow_out
-    fd.flush()
-    fd.close()
-
-
-def report_weak_scaling_by_jobs(setting_list, output_file):
-    fd = open(output_file, "w")
-    fd.write("job,num_slots,problem_size,elpased_time,sizeup,efficiency\n")
-
-    hs = get_history_server()
-    job_id_list = []
-    job_record = {}
-    for setting in setting_list:
-        try:
-            job = setting['job']
-            job_id = mylog.lookup_job_ids(setting['job_log'])[0]
-            job_size = setting['job_size']
-            job_elapsed_time = hs.get_job_elapsed_time(job_id)
-            job_num_slots = job_size / 64
-            if job not in job_record:
-                job_record[job] = {}
-            job_record[job][job_num_slots] = [job_size, job_elapsed_time]
-        except:
-            print "Unable to get the elapsed time for job:", job_id
-    print job_record
-
-    for (job, record) in job_record.iteritems():
-        for num_core in sorted(record.keys()):
-            job_size = record[num_core][0]
-            job_elapsed_time = record[num_core][1]
-            sizeup = (job_size / record[1][0]) * \
-                (record[1][1] / job_elapsed_time)
-            efficiency = sizeup / num_core
-            record[num_core].append(sizeup)
-            record[num_core].append(efficiency)
-            fd.write("%s,%s,%s,%s,%s,%s\n" %
-                     (job, num_core, job_size, job_elapsed_time, sizeup, efficiency))
-    fd.flush()
-    fd.close()
-
-
-def report_task_detail_timeline_by_jobs(setting_list, output_file):
-    job_id_list = []
-    for setting in setting_list:
-        job_ids = mylog.lookup_job_ids(setting['job_log'])
-        job_id_list.extend(job_ids)
-    create_task_detail_timeline(get_history_server(), job_id_list, output_file)
-
-
-def query_waiting_time(host, port, output_file):
-    hs = myinfo.HistoryServer(host, port)
-    job_list = hs.get_job_list()
-    create_waiting_time(hs, job_list, output_file)
-
-
-def create_task_detail_timeline(hs, jobs, output_file):
-    (task_job_mapping, task_job_id_mapping, map_list, reduce_list, mapStartTime, mapEndTime,
-     reduceStartTime, reduceEndTime, reduceShuffleTime, reduceMergeTime) = hs.get_time_counters(jobs)
-
-    startTime = min(
-        reduce(min, mapStartTime.values()),
-        reduce(min, reduceStartTime.values()))
-    endTime = max(
-        reduce(max, mapEndTime.values()),
-        reduce(max, reduceEndTime.values()))
-
-    job_timeline = {}
-    for job in jobs:
-        runningMaps = {}
-        shufflingReduces = {}
-        mergingReduces = {}
-        runningReduces = {}
-        for t in range(startTime, endTime):
-            runningMaps[t] = 0
-            shufflingReduces[t] = 0
-            mergingReduces[t] = 0
-            runningReduces[t] = 0
-        job_timeline[job] = [runningMaps, shufflingReduces,
-                             mergingReduces, runningReduces]
-
-    for mapper in mapStartTime.keys():
-        for t in range(mapStartTime[mapper], mapEndTime[mapper]):
-            job_timeline[task_job_id_mapping[mapper]][0][t] += 1
-    for reducer in reduceStartTime.keys():
-        for t in range(reduceStartTime[reducer], reduceShuffleTime[reducer]):
-            job_timeline[task_job_id_mapping[mapper]][1][t] += 1
-        for t in range(reduceShuffleTime[reducer], reduceMergeTime[reducer]):
-            job_timeline[task_job_id_mapping[mapper]][2][t] += 1
-        for t in range(reduceMergeTime[reducer], reduceEndTime[reducer]):
-            job_timeline[task_job_id_mapping[mapper]][3][t] += 1
-
-    f = open(output_file, "w")
-    f.write("time")
-    for job in jobs:
-        f.write(",%s_map,%s_shuffle,%s_merge,%s_reduce" % (job, job, job, job))
-    f.write(",total_map,total_shuffle,total_merge,total_reduce\n")
-    for t in range(startTime, endTime):
-        timestamp = datetime.datetime.fromtimestamp(
-            t).strftime('%Y-%m-%d %H:%M:%S')
-        f.write(timestamp)
-        total_map = 0
-        total_shuffle = 0
-        total_merge = 0
-        total_reduce = 0
-        for job in jobs:
-            timeline = job_timeline[job]
-            total_map += timeline[0][t]
-            total_shuffle += timeline[1][t]
-            total_merge += timeline[2][t]
-            total_reduce += timeline[3][t]
-            f.write(",%s,%s,%s,%s" %
-                    (timeline[0][t], timeline[1][t], timeline[2][t], timeline[3][t]))
-        f.write(",%s,%s,%s,%s\n" %
-                (total_map, total_shuffle, total_merge, total_reduce))
-
-    f.close()
 
 def main(argv):
 

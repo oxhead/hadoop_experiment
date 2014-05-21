@@ -19,6 +19,7 @@ python2.7 script/measure_job.py -d results/measure_job_1
 * Measure flow capability of computing nodes
 ```
 python2.7 script/measure_computing.py -d results/measure_computing_1c4s --num_storages 4
+
 ```
 
 * Measure flow capability of storage nodes
