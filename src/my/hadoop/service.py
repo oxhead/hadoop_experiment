@@ -41,7 +41,7 @@ def execute(cluster, service, action):
     elif service == "hdfs":
         if action == "format":
             logger.info("[Service] %s NameNode at %s" % (action, hdfs.getNameNode().host))
-            cmd = "%s --config %s namenode -format" % (hdfs_script, conf_dir)
+            cmd = "%s --config %s namenode -format -force" % (hdfs_script, conf_dir)
             command.execute_remote(user, hdfs.getNameNode().host, cmd)
             for node in hdfs.getDataNodes():
                 logger.info("[Service] %s DataNode at %s" % (action, node.host))

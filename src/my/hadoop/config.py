@@ -4,7 +4,7 @@ import argparse
 import re
 import logging
 
-from my.base import *
+from my.hadoop.base import *
 from my.util import command
 
 logger = logging.getLogger(__name__)
@@ -93,7 +93,7 @@ def parse_config(parameter_list):
     config : dict
     """
     config = {}
-    for p in parameter_list:
+    for p in parameter_list if parameter_list is not None else []:
         p_split = p.split("=")
         config[p_split[0]] = p_split[1]
     return config
@@ -121,6 +121,8 @@ def generate_config_files(cluster_config_path, node_config_path, conf_dir, outpu
 
     node_config = get_node_config(node_config_path)
 
+    # set up user name
+    config['user'] = cluster.getUser()
     # is better to use /home or ~
     config[
         'hadoop.runtime.dir'] = "/home/%s/hadoop_runtime" % cluster.getUser()

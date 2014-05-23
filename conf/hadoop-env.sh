@@ -18,7 +18,7 @@
 # Environment Setting   #
 #########################
 
-ROOT_DIR=/home/chsu6
+ROOT_DIR=/home/${user}
 export HADOOP_HOME=$ROOT_DIR/hadoop
 export HADOOP_MAPRED_HOME=$HADOOP_HOME
 export HADOOP_COMMON_HOME=$HADOOP_HOME
