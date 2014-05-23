@@ -10,7 +10,7 @@
 
   <property>
     <name>yarn.scheduler.flow.solver</name>
-    <value>/home/chsu6/hadoop/conf/cs2</value>
+    <value>/home/${user}/hadoop/conf/cs2</value>
   </property>
 
   <property>

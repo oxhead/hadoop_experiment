@@ -13,7 +13,7 @@
     </property>
     <property>
         <name>hdfs.datanode.dir</name>
-        <value>${hdfs.runtime.dir}/datanode</value>
+        <value>${hdfs.datanode.dir}</value>
     </property>
     <property>
         <name>hdfs.secondarynamenode.dir</name>
