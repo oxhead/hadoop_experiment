@@ -5,7 +5,8 @@ from my.hadoop import config
 
 logger = logging.getLogger(__name__)
 
-def execute(cluster, service, action):
+# workaround for foramt
+def execute(cluster, service, action, node_config_path="setting/node_config.py"):
     hadoop_dir = "~/hadoop"
     conf_dir = "%s/conf" % hadoop_dir
     dameon_script = "%s/sbin/hadoop-daemon.sh" % hadoop_dir
@@ -45,8 +46,13 @@ def execute(cluster, service, action):
             command.execute_remote(user, hdfs.getNameNode().host, cmd)
             for node in hdfs.getDataNodes():
                 logger.info("[Service] %s DataNode at %s" % (action, node.host))
-                # turnaround soultion, hadoop_runtime should be configurable
-                command.execute_remote(user, node.host, "rm -rf ~/hadoop_runtime/hdfs/datanode/*")
+                # workaround soultion, hadoop_runtime should be configurable
+		node_config = config.get_node_config(node_config_path)
+		data_dirs = node_config.getConfig(node.host, "hdfs.datanode.dir")
+		for data_dir in data_dirs.split(","):
+			data_dir = data_dir.replace("[SSD]", "").replace("[DISK]", "").strip()
+			logger.info("\tClean %s" % data_dir)
+			command.execute_remote(user, node.host, "rm -rf %s" % data_dir)
         else:
             if action == "start":
                 logger.info("[Service] %s NameNode at %s" % (action, hdfs.getNameNode().host))

@@ -3,6 +3,7 @@ import imp
 import argparse
 import re
 import logging
+import copy
 
 from my.hadoop.base import *
 from my.util import command
@@ -15,10 +16,23 @@ class NodeConfig(object):
         self.config = config
 
     def getConfig(self, host, keyString):
+	if host in self.config:
+		return self.config[host][keyString]
+
         for (key, value) in self.config.items():
             pattern = re.compile(key)
             if pattern.match(host):
                 return value[keyString]
+        return None
+
+    def getConfigPairs(self, host):
+	if host in self.config:
+		return self.config[host]
+
+	for (key, value) in self.config.items():
+            pattern = re.compile(key)
+            if pattern.match(host):
+		return value
         return None
 
 
@@ -123,12 +137,8 @@ def generate_config_files(cluster_config_path, node_config_path, conf_dir, outpu
 
     # set up user name
     config['user'] = cluster.getUser()
-    # is better to use /home or ~
-    config[
-        'hadoop.runtime.dir'] = "/home/%s/hadoop_runtime" % cluster.getUser()
     # set up YARN server
-    config[
-        'yarn.resourcemanager.hostname'] = mapreduce.getResourceManager().host
+    config['yarn.resourcemanager.hostname'] = mapreduce.getResourceManager().host
     # set up HDFS server, the ending slash is required
     config['fs.defaultFS'] = 'hdfs://%s' % hdfs.getNameNode().host
 
@@ -138,20 +148,21 @@ def generate_config_files(cluster_config_path, node_config_path, conf_dir, outpu
         # create directory
         node_dir = os.path.join(output_dir, node.host)
         command.execute("mkdir -p %s" % node_dir)
+        
+	config_individual = copy.copy(config)
+        # add node-specific configuations
+        for (key, value) in node_config.getConfigPairs(node.host).items():
+            config_individual[key] = value
 
         for f in os.listdir(conf_dir):
             file_in_path = os.path.join(conf_dir, f)
             file_out_path = os.path.join(node_dir, f)
             # node specific configuration
-            config['yarn.nodemanager.resource.memory-mb'] = node_config.getConfig(
-                node.host, "memory")
-            config['yarn.scheduler.minimum-allocation-mb'] = node_config.getConfig(
-                node.host, "slot_size")
-            config['JAVA_HOME'] = node_config.getConfig(node.host, "jdk_dir")
+
             if "xml" in f or "sh" in f:
                 with open(file_in_path, "r") as fp_in:
                     content = fp_in.read()
-                    for (key, value) in config.items():
+                    for (key, value) in config_individual.items():
                         logger.debug("${%s} = %s", key, value)
                         content = content.replace("${%s}" % key, str(value))
                     with open(file_out_path, "w") as fp_out:

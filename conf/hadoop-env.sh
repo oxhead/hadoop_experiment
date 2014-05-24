@@ -1,9 +1,12 @@
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
+# Copyright 2011 The Apache Software Foundation
+# 
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
@@ -13,24 +16,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-#########################
-# Environment Setting   #
-#########################
-
-ROOT_DIR=/home/${user}
-export HADOOP_HOME=$ROOT_DIR/hadoop
-export HADOOP_MAPRED_HOME=$HADOOP_HOME
-export HADOOP_COMMON_HOME=$HADOOP_HOME
-export HADOOP_HDFS_HOME=$HADOOP_HOME
-export YARN_HOME=$HADOOP_HOME
-
-export HADOOP_CONF_DIR=$HADOOP_HOME/conf
-export YARN_CONF_DIR=$HADOOP_HOME/conf
-
-export HADOOP_LOG_DIR=$ROOT_DIR/hadoop_runtime/logs
-export YARN_LOG_DIR=$ROOT_DIR/hadoop_runtime/yarn/logs
-
 # Set Hadoop-specific environment variables here.
 
 # The only required environment variable is JAVA_HOME.  All others are
@@ -38,9 +23,22 @@ export YARN_LOG_DIR=$ROOT_DIR/hadoop_runtime/yarn/logs
 # set JAVA_HOME in this file, so that it is correctly defined on
 # remote nodes.
 
+# Customized sturcture
+ROOT_DIR=/home/${user}
+export HADOOP_HOME=$ROOT_DIR/hadoop
+export HADOOP_MAPRED_HOME=$HADOOP_HOME
+export HADOOP_COMMON_HOME=$HADOOP_HOME
+export HADOOP_HDFS_HOME=$HADOOP_HOME
+export YARN_HOME=$HADOOP_HOME
+export HADOOP_CONF_DIR=$HADOOP_HOME/conf
+export HADOOP_LOG_DIR=$HADOOP_HOME/logs
+
 # The java implementation to use.
-#export JAVA_HOME=/opt/ibm/biginsights/jdk
 export JAVA_HOME=${JAVA_HOME}
+
+# The jsvc implementation to use. Jsvc is required to run secure datanodes.
+#export JSVC_HOME=${JSVC_HOME}
+
 export HADOOP_CONF_DIR=${HADOOP_CONF_DIR:-"/etc/hadoop"}
 
 # Extra Java CLASSPATH elements.  Automatically insert capacity-scheduler.
@@ -57,30 +55,42 @@ done
 #export HADOOP_NAMENODE_INIT_HEAPSIZE=""
 
 # Extra Java runtime options.  Empty by default.
-export HADOOP_OPTS="-Djava.net.preferIPv4Stack=true $HADOOP_CLIENT_OPTS"
+export HADOOP_OPTS="$HADOOP_OPTS -Djava.net.preferIPv4Stack=true"
+
+MAC_OSX=false
+case "`uname`" in
+Darwin*) MAC_OSX=true;;
+esac
+if $MAC_OSX; then
+    export HADOOP_OPTS="$HADOOP_OPTS -Djava.security.krb5.realm= -Djava.security.krb5.kdc="
+fi
 
 # Command specific options appended to HADOOP_OPTS when specified
-export HADOOP_NAMENODE_OPTS="-Dhadoop.security.logger=INFO,DRFAS -Dhdfs.audit.logger=INFO,DRFAAUDIT $HADOOP_NAMENODE_OPTS"
-HADOOP_JOBTRACKER_OPTS="-Dhadoop.security.logger=INFO,DRFAS -Dmapred.audit.logger=INFO,MRAUDIT -Dmapred.jobsummary.logger=INFO,JSA $HADOOP_JOBTRACKER_OPTS"
-HADOOP_TASKTRACKER_OPTS="-Dhadoop.security.logger=ERROR,console -Dmapred.audit.logger=ERROR,console $HADOOP_TASKTRACKER_OPTS"
-HADOOP_DATANODE_OPTS="-Dhadoop.security.logger=ERROR,DRFAS $HADOOP_DATANODE_OPTS"
+export HADOOP_NAMENODE_OPTS="-Dhadoop.security.logger=${HADOOP_SECURITY_LOGGER:-INFO,RFAS} -Dhdfs.audit.logger=${HDFS_AUDIT_LOGGER:-INFO,NullAppender} $HADOOP_NAMENODE_OPTS"
+export HADOOP_DATANODE_OPTS="-Dhadoop.security.logger=ERROR,RFAS $HADOOP_DATANODE_OPTS"
 
-export HADOOP_SECONDARYNAMENODE_OPTS="-Dhadoop.security.logger=INFO,DRFAS -Dhdfs.audit.logger=INFO,DRFAAUDIT $HADOOP_SECONDARYNAMENODE_OPTS"
+export HADOOP_SECONDARYNAMENODE_OPTS="-Dhadoop.security.logger=${HADOOP_SECURITY_LOGGER:-INFO,RFAS} -Dhdfs.audit.logger=${HDFS_AUDIT_LOGGER:-INFO,NullAppender} $HADOOP_SECONDARYNAMENODE_OPTS"
+
+export HADOOP_NFS3_OPTS="$HADOOP_NFS3_OPTS"
+export HADOOP_PORTMAP_OPTS="-Xmx512m $HADOOP_PORTMAP_OPTS"
 
 # The following applies to multiple commands (fs, dfs, fsck, distcp etc)
-export HADOOP_CLIENT_OPTS="-Xmx128m $HADOOP_CLIENT_OPTS"
+export HADOOP_CLIENT_OPTS="-Xmx512m $HADOOP_CLIENT_OPTS"
 #HADOOP_JAVA_PLATFORM_OPTS="-XX:-UsePerfData $HADOOP_JAVA_PLATFORM_OPTS"
 
 # On secure datanodes, user to run the datanode as after dropping privileges
 export HADOOP_SECURE_DN_USER=${HADOOP_SECURE_DN_USER}
 
 # Where log files are stored.  $HADOOP_HOME/logs by default.
-export HADOOP_LOG_DIR=${HADOOP_LOG_DIR}/$USER
+#export HADOOP_LOG_DIR=${HADOOP_LOG_DIR}/$USER
 
 # Where log files are stored in the secure data environment.
 export HADOOP_SECURE_DN_LOG_DIR=${HADOOP_LOG_DIR}/${HADOOP_HDFS_USER}
 
 # The directory where pid files are stored. /tmp by default.
+# NOTE: this should be set to a directory that can only be written to by 
+#       the user that will run the hadoop daemons.  Otherwise there is the
+#       potential for a symlink attack.
 export HADOOP_PID_DIR=${HADOOP_PID_DIR}
 export HADOOP_SECURE_DN_PID_DIR=${HADOOP_PID_DIR}
 
