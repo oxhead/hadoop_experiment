@@ -24,7 +24,7 @@
     </property>
     <property>
         <name>yarn.resourcemanager.webapp.address</name>
-        <value>${yarn.resourcemanager.hostname}:18088</value>
+        <value>0.0.0.0:18088</value>
     </property>
     <property>
         <name>yarn.resourcemanager.resource-tracker.address</name>

@@ -48,7 +48,7 @@ def switch_config(setting, format=False):
 
         if format:
             logger.info("Status: format HDFS storage")
-            service.execute(cluster_config, "hdfs", "format")
+            service.execute(cluster_config, "hdfs", "format", setting.node_config_path)
 
         logger.info("Status: start Hadoop service")
         service.execute(cluster_config, "all", "start")

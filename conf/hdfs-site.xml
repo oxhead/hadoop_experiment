@@ -93,4 +93,9 @@
         <value>0.0.0.0:10105</value>
     </property>
 
+    <property>
+	<name>dfs.datanode.fsdataset.volume.choosing.policy</name>
+	<value>${dfs.datanode.fsdataset.volume.choosing.policy}</value>
+    </property>
+
 </configuration>

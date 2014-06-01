@@ -1,5 +1,7 @@
 #!/usr/bin/python
 import logging
+import os
+import time
 from my.util import command
 from my.hadoop import config
 
@@ -10,6 +12,7 @@ def execute(cluster, service, action, node_config_path="setting/node_config.py")
     hadoop_dir = "~/hadoop"
     conf_dir = "%s/conf" % hadoop_dir
     dameon_script = "%s/sbin/hadoop-daemon.sh" % hadoop_dir
+    yarn_dameon_script = "%s/sbin/yarn-daemon.sh" % hadoop_dir
     yarn_script = "%s/bin/yarn" % hadoop_dir
     mapreduce_script = "%s/bin/mapred" % hadoop_dir
     hdfs_script = "%s/bin/hdfs" % hadoop_dir
@@ -17,6 +20,8 @@ def execute(cluster, service, action, node_config_path="setting/node_config.py")
     user = cluster.getUser()
     mapreduce = cluster.getMapReduceCluster()
     hdfs = cluster.getHDFSCluster()
+
+    returncode_list = []
 
     if service == "all":
         service_list = ["hdfs", "mapreduce", "historyserver"] if action == "start" else ["historyserver", "mapreduce", "hdfs"]
@@ -26,21 +31,23 @@ def execute(cluster, service, action, node_config_path="setting/node_config.py")
     elif service == "mapreduce":
 
         if action == "start":
+	    tmp_file = get_tmp_file()
             # start/stop ResourceManager
             logger.info("[Service] %s ResourceManager at %s" % (action, mapreduce.getResourceManager().host))
-            cmd = "%s --config %s --script %s %s resourcemanager" % (dameon_script, conf_dir, yarn_script, action)
+            cmd = "%s --config %s %s resourcemanager" % (yarn_dameon_script, conf_dir, action)
             command.execute_remote(user, mapreduce.getResourceManager().host, cmd)
         # start/stop NodeManager
         for node in mapreduce.getNodeManagers():
             logger.info("[Service] %s NodeManager at %s" % (action, node.host))
-            cmd = "%s --config %s --script %s %s nodemanager" % (dameon_script, conf_dir, yarn_script, action)
+            cmd = "%s --config %s %s nodemanager" % (yarn_dameon_script, conf_dir, action)
             command.execute_remote(user, node.host, cmd)
         if action == "stop":
             logger.info("[Service] %s ResourceManager at %s" % (action, mapreduce.getResourceManager().host))
-            cmd = "%s --config %s --script %s %s resourcemanager" % (dameon_script, conf_dir, yarn_script, action)
+            cmd = "%s --config %s %s resourcemanager" % (yarn_dameon_script, conf_dir, action)
             command.execute_remote(user, mapreduce.getResourceManager().host, cmd)
     elif service == "hdfs":
         if action == "format":
+	    node_config = config.get_node_config(node_config_path)
             logger.info("[Service] %s NameNode at %s" % (action, hdfs.getNameNode().host))
             cmd = "%s --config %s namenode -format -force" % (hdfs_script, conf_dir)
             command.execute_remote(user, hdfs.getNameNode().host, cmd)
@@ -83,3 +90,6 @@ def deploy(cluster, conf_dir):
                 command.execute_remote(cluster.user, node.host, "mkdir -p ~/hadoop/conf")
                 # workaround for path
                 command.execute("scp -r %s/%s/* %s@%s:~/hadoop/conf" % (conf_dir, node.host, cluster.user, node.host))
+
+def get_tmp_file():
+	return "/tmp/service_%s.returncode" % int(time.time())

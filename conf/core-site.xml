@@ -24,7 +24,8 @@
 
     <property>
         <name>hadoop.tmp.dir</name>
-       	<value>${hadoop.runtime.dir}/tmp</value>
+       	<value>/tmp</value>
+	<!--<value>${hadoop.runtime.dir}/tmp</value>-->
         <final></final>
         <description></description>
     </property>
