@@ -9,6 +9,7 @@ import time
 import numpy
 
 logger = logging.getLogger(__name__)
+session = requests.Session()
 
 def get_query_url(hs):
     url = 'http://%s:%s/ws/v1/history/mapreduce' % (hs.host, hs.port)
@@ -100,11 +101,11 @@ def get_task_time_counters(hs, job_id, task_id):
     reduceEndTime = None
 
     attempt_list_url = get_task_url(hs, job_id, task_id) + '/attempts'
-    attempt_list_json = requests.get(attempt_list_url)
+    attempt_list_json = session.get(attempt_list_url)
     for attempt in attempt_list_json.json()['taskAttempts'
                                             ]['taskAttempt']:
         attempt_url = attempt_list_url + '/' + attempt['id']
-        attempt_json = attempt_json = requests.get(attempt_url)
+        attempt_json = attempt_json = session.get(attempt_url)
         json_content = attempt_json.json()
         attempt_id = json_content['taskAttempt']['id']
         attempt_type = json_content['taskAttempt']['type']
@@ -139,7 +140,7 @@ def get_task_time_counters(hs, job_id, task_id):
 
 def get_task_counters(hs, job_id, task_id):
     task_url = get_task_url(hs, job_id, task_id)
-    task_json_response = requests.get(task_url)
+    task_json_response = session.get(task_url)
     task_json = task_json_response.json()
     task_json_response.close()
     if task_json['task']['state'] != 'SUCCEEDED':
@@ -151,7 +152,7 @@ def get_task_counters(hs, job_id, task_id):
     counters['finishTime'] = task_json['task']['finishTime'] / 1000.0
 
     counters_url = '%s/counters' % task_url
-    counters_json_response = requests.get(counters_url)
+    counters_json_response = session.get(counters_url)
     counters_json = counters_json_response.json()
     counters_json_response.close()
 
@@ -208,7 +209,7 @@ def get_job_list(hs, time_start=None, time_end=None):
     job_list_query_url = '%s?startedTimeBegin=%s&finishTimeEnd=%s' \
         % (job_list_url, time_start * 1000, time_end * 1000)
     jobs = []
-    job_list_json = requests.get(job_list_query_url)
+    job_list_json = session.get(job_list_query_url)
     if job_list_json.status_code != 200:
         raise Exception('Unable to get task list for job: %s', job_id)
     jobs = job_list_json.json()['jobs']['job']
@@ -223,7 +224,7 @@ def get_job_list(hs, time_start=None, time_end=None):
 
 def get_task_list(hs, job_id, type=None):
     tasks_url = '%s/tasks' % get_job_url(hs, job_id)
-    tasks_json_response = requests.get(tasks_url)
+    tasks_json_response = session.get(tasks_url)
     if tasks_json_response.status_code != 200:
         raise Exception('Unable to get task list for job: %s' % job_id)
     tasks_json = tasks_json_response.json()
@@ -257,7 +258,7 @@ def get_job_detail(hs, job_id):
     job_url = 'http://%s:%s/ws/v1/history/mapreduce/jobs/%s' \
         % (hs.host, hs.port, job_id)
     logger.debug(job_url)
-    job_json_response = requests.get(job_url)
+    job_json_response = session.get(job_url)
     if job_json_response.status_code != 200:
         return None
     job_json = job_json_response.json()
