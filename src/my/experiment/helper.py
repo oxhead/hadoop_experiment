@@ -89,7 +89,7 @@ def get_dataset_dir():
     return "/dataset"
 
 def get_dataset_source_dir():
-    return "/nfs_power2/dataset"
+    return "/dataset"
 
 def get_dataset_name(job_name):
     dataset_name = None

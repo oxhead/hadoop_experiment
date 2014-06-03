@@ -30,7 +30,7 @@ def main(argv):
     parser = argparse.ArgumentParser(description='Hadoop experiment')
     parser.add_argument("--directory", required=True, help="The output directory")
     parser.add_argument("--scheduler", required=False, default="Fifo", help="The scheduler")
-    parser.add_argument("--job", required=True, choices=["terasort"], action="append", help="The job name")
+    parser.add_argument("--job", required=True, choices=["terasort", "grep"], action="append", help="The job name")
     parser.add_argument("--size", required=True, action="append", help="The job size")
     parser.add_argument("--cluster", required=False, default="setting/cluster_config.py", help="The path to the cluster configuration")
     parser.add_argument("--node", required=False, default="setting/node_config.py", help="The path to the node configuratoin")
