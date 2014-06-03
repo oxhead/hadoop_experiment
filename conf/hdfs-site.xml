@@ -98,4 +98,9 @@
 	<value>${dfs.datanode.fsdataset.volume.choosing.policy}</value>
     </property>
 
+    <property>
+	<name>dfs.tier.enabled</name>
+	<value>${dfs.tier.enabled}</value>
+    </property>
+
 </configuration>
