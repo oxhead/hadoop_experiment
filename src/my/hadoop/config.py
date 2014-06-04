@@ -76,14 +76,10 @@ def generate_config(additional_config=None):
     config = None
     default_config = {
         "io.file.buffer.size": "65536",
-        "yarn.nodemanager.resource.memory-mb": "66000",
         "fs.defaultFS": "file:///nfs_power2/",
-        "mapreduce.job.reduces": "16",
+        "yarn.nodemanager.resource.memory-mb": "66000",
         "yarn.scheduler.minimum-allocation-mb": "512",
         "yarn.scheduler.flow.assignment.model": "Flow",
-        "mapreduce.job.reduce.slowstart.completedmaps": "0.05",
-        "mapreduce.reduce.shuffle.parallelcopies": "5",
-        "dfs.replication": "3",
         "yarn.resourcemanager.scheduler.class": "org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler",
         "yarn.inmemory.enabled": "false",
         "yarn.inmemory.prefetch.dir": "/dev/null",
@@ -92,6 +88,12 @@ def generate_config(additional_config=None):
         "yarn.inmemory.prefetch.tasks": "0",
         "yarn.inmemory.prefetch.transfer": "false",
         "yarn.inmemory.prefetch.inputstream.enabled": "false",
+        "mapreduce.job.reduces": "16",
+        "mapreduce.job.reduce.slowstart.completedmaps": "0.05",
+        "mapreduce.reduce.shuffle.parallelcopies": "5",
+        "dfs.replication": "3",
+        "dfs.tier.enabled": "false",
+        "dfs.datanode.fsdataset.volume.choosing.policy": "org.apache.hadoop.hdfs.server.datanode.fsdataset.RoundRobinVolumeChoosingPolicy",
 
     }
     if additional_config is not None and type(additional_config) is dict:

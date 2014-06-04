@@ -32,8 +32,8 @@
         <!--<value>${hadoop.storage}/staging</value>-->
     </property>
     <property>
-    	<name>mapreduce.jobhistory.move.interval-ms</name>
-    	<value>60000</value>
+        <name>mapreduce.jobhistory.move.interval-ms</name>
+        <value>30000</value>
     </property>
 
 <!--

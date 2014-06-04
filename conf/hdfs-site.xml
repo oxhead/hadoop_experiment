@@ -32,7 +32,7 @@
     </property>
     <property>
 	<name>dfs.datanode.balance.bandwidthPerSec</name>
-	<value>5242880</value>
+	<value>1073741824</value>
     </property>
     <property>
 	<name>fs.checkpoint.dir</name>
