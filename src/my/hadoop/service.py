@@ -20,6 +20,7 @@ def execute(cluster, service, action, node_config_path="setting/node_config.py")
     user = cluster.getUser()
     mapreduce = cluster.getMapReduceCluster()
     hdfs = cluster.getHDFSCluster()
+    historyserver = cluster.getHistoryServer()
 
     returncode_list = []
 
@@ -79,10 +80,9 @@ def execute(cluster, service, action, node_config_path="setting/node_config.py")
                 command.execute_remote(user, hdfs.getNameNode().host, cmd)
 
     elif service == "historyserver":
-        for node in mapreduce.getNodes():
-            logger.info("[Service] %s HistoryServer at %s" % (action, node.host))
-            cmd = "%s --config %s --script %s %s historyserver" % (dameon_script, conf_dir, mapreduce_script, action)
-            command.execute_remote(user, node.host, cmd)
+        logger.info("[Service] %s HistoryServer at %s" % (action, historyserver.host))
+        cmd = "%s --config %s --script %s %s historyserver" % (dameon_script, conf_dir, mapreduce_script, action)
+        command.execute_remote(user, historyserver.host, cmd)
 
 def deploy(cluster, conf_dir):
         for node in cluster.getNodes():
