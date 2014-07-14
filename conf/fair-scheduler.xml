@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<allocations>
+  <queue name="default">
+    <minResources>10000 mb,0vcores</minResources>
+    <maxResources>90000000 mb,90000vcores</maxResources>
+    <maxRunningApps>30</maxRunningApps>
+    <weight>2.0</weight>
+    <schedulingPolicy>fair</schedulingPolicy>
+    <aclSubmitApps>chinjunh</aclSubmitApps>
+  </queue>
+</allocations>
