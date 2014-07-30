@@ -29,15 +29,6 @@
         <final></final>
         <description></description>
     </property>
-
-    <property>
-	<name>mapreduce.map.memory.mb</name>
-	<value>1024</value>
-    </property>
-    <property>
-        <name>mapreduce.reduce.memory.mb</name>
-        <value>1024</value>
-    </property>
     <property>
     	<name>io.file.buffer.size</name>
     	<value>${io.file.buffer.size}</value>

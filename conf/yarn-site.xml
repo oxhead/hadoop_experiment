@@ -27,6 +27,10 @@
         <value>0.0.0.0:18088</value>
     </property>
     <property>
+        <name>yarn.web-proxy.address</name>
+        <value>0.0.0.0:18089</value>
+    </property>
+    <property>
         <name>yarn.resourcemanager.resource-tracker.address</name>
         <value>${yarn.resourcemanager.hostname}:18031</value>
     </property>
@@ -61,7 +65,7 @@
     </property>
     <property>
 	<name>yarn.nodemanager.local-dirs</name>
-	<value>${yarn.nodemanager.dir}/local</value>
+	<value>${yarn.nodemanager.local-dirs}</value>
 	<final>true</final>
     </property>
     <property>

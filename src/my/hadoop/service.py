@@ -30,22 +30,33 @@ def execute(cluster, service, action, node_config_path="setting/node_config.py")
             execute(cluster, service, action)
         return
     elif service == "mapreduce":
-
-        if action == "start":
-	    tmp_file = get_tmp_file()
-            # start/stop ResourceManager
-            logger.info("[Service] %s ResourceManager at %s" % (action, mapreduce.getResourceManager().host))
-            cmd = "%s --config %s %s resourcemanager" % (yarn_dameon_script, conf_dir, action)
-            command.execute_remote(user, mapreduce.getResourceManager().host, cmd)
-        # start/stop NodeManager
-        for node in mapreduce.getNodeManagers():
-            logger.info("[Service] %s NodeManager at %s" % (action, node.host))
-            cmd = "%s --config %s %s nodemanager" % (yarn_dameon_script, conf_dir, action)
-            command.execute_remote(user, node.host, cmd)
-        if action == "stop":
-            logger.info("[Service] %s ResourceManager at %s" % (action, mapreduce.getResourceManager().host))
-            cmd = "%s --config %s %s resourcemanager" % (yarn_dameon_script, conf_dir, action)
-            command.execute_remote(user, mapreduce.getResourceManager().host, cmd)
+        if action == "format":
+            node_config = config.get_node_config(node_config_path)
+            for node in hdfs.getDataNodes():
+                logger.info("[Service] %s NodeManager at %s" % (action, node.host))
+                # workaround soultion, hadoop_runtime should be configurable
+                node_config = config.get_node_config(node_config_path)
+                hadoop_dirs = node_config.getConfig(node.host, "yarn.nodemanager.local-dirs")
+                for hadoop_dir in hadoop_dirs.split(","):
+                        hadoop_dir = hadoop_dir.strip()
+                        logger.info("\tClean %s" % hadoop_dir)
+                        command.execute_remote(user, node.host, "rm -rf %s/*" % hadoop_dir)
+        else:
+            if action == "start":
+	        tmp_file = get_tmp_file()
+                # start/stop ResourceManager
+                logger.info("[Service] %s ResourceManager at %s" % (action, mapreduce.getResourceManager().host))
+                cmd = "%s --config %s %s resourcemanager" % (yarn_dameon_script, conf_dir, action)
+                command.execute_remote(user, mapreduce.getResourceManager().host, cmd)
+            # start/stop NodeManager
+            for node in mapreduce.getNodeManagers():
+                logger.info("[Service] %s NodeManager at %s" % (action, node.host))
+                cmd = "%s --config %s %s nodemanager" % (yarn_dameon_script, conf_dir, action)
+                command.execute_remote(user, node.host, cmd)
+            if action == "stop":
+                logger.info("[Service] %s ResourceManager at %s" % (action, mapreduce.getResourceManager().host))
+                cmd = "%s --config %s %s resourcemanager" % (yarn_dameon_script, conf_dir, action)
+                command.execute_remote(user, mapreduce.getResourceManager().host, cmd)
     elif service == "hdfs":
         if action == "format":
 	    node_config = config.get_node_config(node_config_path)

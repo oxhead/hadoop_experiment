@@ -46,7 +46,7 @@
     </property>
     <property>
         <name>dfs.blocksize</name>
-        <value>67108864</value>
+        <value>134217728</value>
 	<description>64MB block size</description>
     </property>
     <property>
