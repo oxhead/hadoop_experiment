@@ -22,20 +22,20 @@ def execute(cluster, service, action, node_config_path="setting/node_config.py")
     hdfs = cluster.getHDFSCluster()
     historyserver = cluster.getHistoryServer()
 
+    node_config = config.get_node_config(node_config_path)
+
     returncode_list = []
 
     if service == "all":
         service_list = ["hdfs", "mapreduce", "historyserver"] if action == "start" else ["historyserver", "mapreduce", "hdfs"]
         for service in service_list:
-            execute(cluster, service, action)
+            execute(cluster, service, action, node_config_path)
         return
     elif service == "mapreduce":
         if action == "format":
-            node_config = config.get_node_config(node_config_path)
             for node in hdfs.getDataNodes():
                 logger.info("[Service] %s NodeManager at %s" % (action, node.host))
                 # workaround soultion, hadoop_runtime should be configurable
-                node_config = config.get_node_config(node_config_path)
                 hadoop_dirs = node_config.getConfig(node.host, "yarn.nodemanager.local-dirs")
                 for hadoop_dir in hadoop_dirs.split(","):
                         hadoop_dir = hadoop_dir.strip()
@@ -59,14 +59,12 @@ def execute(cluster, service, action, node_config_path="setting/node_config.py")
                 command.execute_remote(user, mapreduce.getResourceManager().host, cmd)
     elif service == "hdfs":
         if action == "format":
-	    node_config = config.get_node_config(node_config_path)
             logger.info("[Service] %s NameNode at %s" % (action, hdfs.getNameNode().host))
             cmd = "%s --config %s namenode -format -force" % (hdfs_script, conf_dir)
             command.execute_remote(user, hdfs.getNameNode().host, cmd)
             for node in hdfs.getDataNodes():
                 logger.info("[Service] %s DataNode at %s" % (action, node.host))
                 # workaround soultion, hadoop_runtime should be configurable
-		node_config = config.get_node_config(node_config_path)
 		data_dirs = node_config.getConfig(node.host, "hdfs.datanode.dir")
 		for data_dir in data_dirs.split(","):
 			data_dir = data_dir.replace("[SSD]", "").replace("[DISK]", "").strip()
