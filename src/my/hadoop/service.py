@@ -43,7 +43,6 @@ def execute(cluster, service, action, node_config_path="setting/node_config.py")
                         command.execute_remote(user, node.host, "rm -rf %s/*" % hadoop_dir)
         else:
             if action == "start":
-	        tmp_file = get_tmp_file()
                 # start/stop ResourceManager
                 logger.info("[Service] %s ResourceManager at %s" % (action, mapreduce.getResourceManager().host))
                 cmd = "%s --config %s %s resourcemanager" % (yarn_dameon_script, conf_dir, action)
@@ -52,6 +51,7 @@ def execute(cluster, service, action, node_config_path="setting/node_config.py")
             for node in mapreduce.getNodeManagers():
                 logger.info("[Service] %s NodeManager at %s" % (action, node.host))
                 cmd = "%s --config %s %s nodemanager" % (yarn_dameon_script, conf_dir, action)
+                print cmd
                 command.execute_remote(user, node.host, cmd)
             if action == "stop":
                 logger.info("[Service] %s ResourceManager at %s" % (action, mapreduce.getResourceManager().host))
@@ -81,6 +81,7 @@ def execute(cluster, service, action, node_config_path="setting/node_config.py")
             for node in hdfs.getDataNodes():
                 logger.info("[Service] %s DataNode at %s" % (action, node.host))
                 cmd = "%s --config %s --script %s %s datanode" % (dameon_script, conf_dir, hdfs_script, action)
+		print cmd
                 command.execute_remote(user, node.host, cmd)
 
             if action == "stop":

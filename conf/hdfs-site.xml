@@ -27,7 +27,7 @@
     </property>
     <property>
 	<name>dfs.datanode.data.dir</name>
-	<value>${hdfs.datanode.dir}</value>
+	<value>${hdfs.datanode.dir}/data</value>
 	<final>true</final>
     </property>
     <property>

@@ -1,32 +1,22 @@
-user = 'chinjunh'
+user = 'root'
 
 mapreduce = {
-        'ResourceManager': 'KSWAD-scale67.ict.englab.netapp.com',
+        'ResourceManager': '10.25.13.50',
         'NodeManagers': [
-                'KSWAD-scale64.ict.englab.netapp.com',
-		'KSWAD-scale65.ict.englab.netapp.com',
-		'KSWAD-scale66.ict.englab.netapp.com',
-		'KSWAD-scale61.ict.englab.netapp.com',
-		'KSWAD-scale62.ict.englab.netapp.com',
-		'KSWAD-scale63.ict.englab.netapp.com',
+                '10.25.11.58',
         ]
 }
 
 hdfs = {
-        'NameNode': 'KSWAD-scale67.ict.englab.netapp.com',
+        'NameNode': '10.25.13.50',
         'DataNodes': [
-		'KSWAD-scale64.ict.englab.netapp.com',
-                'KSWAD-scale65.ict.englab.netapp.com',
-                'KSWAD-scale66.ict.englab.netapp.com',
-                'KSWAD-scale61.ict.englab.netapp.com',
-                'KSWAD-scale62.ict.englab.netapp.com',
-                'KSWAD-scale63.ict.englab.netapp.com',
+		'10.25.11.59',
         ]
 }
 
 historyserver = {
-        'host': 'KSWAD-scale67.ict.englab.netapp.com',
+        'host': '10.25.13.50',
         'port': '19888',
 }
 
-ganglia = "KSWAD-scale67.ict.englab.netapp.com"
+ganglia = "10.25.13.50"
