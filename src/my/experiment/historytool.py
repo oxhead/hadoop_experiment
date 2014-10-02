@@ -8,6 +8,8 @@ import json
 import time
 import numpy
 
+from my.hadoop.base import HistoryServer
+
 logger = logging.getLogger(__name__)
 
 session = requests.Session()
@@ -267,6 +269,8 @@ def get_job_detail(hs, job_id):
     if job_json['job']['state'] != 'SUCCEEDED':
         return None
 
+    return job_json
+    '''
     counters = {}
     counters['name'] = job_json['job']['name']
     counters['mapsTotal'] = job_json['job']['mapsTotal']
@@ -274,6 +278,7 @@ def get_job_detail(hs, job_id):
     counters['startTime'] = job_json['job']['startTime'] / 1000.0
     counters['finishTime'] = job_json['job']['finishTime'] / 1000.0
     return counters
+    '''
 
 
 def get_job_elapsed_time(hs, job_id):
@@ -318,6 +323,86 @@ def get_task_flow_detail(hs, job_id, task_id):
                                                                 * 1024.0) / task_detail['elapsedTime']
     return task_detail
 
+'''
+-----------------------------
+'''
+
+def get_json_job_list(hs, time_start=None, time_end=None):
+    time_start = (time_start if time_start is not None else '')
+    time_end = (time_end if time_end is not None else '')
+    job_list_url = '%s/jobs' % get_query_url(hs)
+    job_list_query_url = '%s?startedTimeBegin=%s&finishTimeEnd=%s' \
+        % (job_list_url, time_start * 1000, time_end * 1000)
+    job_list_json = session.get(job_list_query_url)
+    if job_list_json.status_code != 200:
+        raise Exception('Unable to get task list for job: %s', job_id)
+    return job_list_json.json()['jobs']['job']
+
+def get_json_job_detail(hs, job_id):
+    job_url = get_job_url(hs, job_id)
+    job_json = session.get(job_url)
+    if job_json.status_code != 200:
+        return None
+
+    return job_json.json()['job']
+
+def get_json_task_list(hs, job_id, type=None):
+    tasks_url = '%s/tasks' % get_job_url(hs, job_id)
+    tasks_json_response = session.get(tasks_url)
+    if tasks_json_response.status_code != 200:
+        raise Exception('Unable to get task list for job: %s' % job_id)
+    return tasks_json_response.json()['tasks']['task']
+    
+def get_json_task_detail(hs, job_id, task_id):
+    task_url = get_task_url(hs, job_id, task_id)
+    task_json = session.get(task_url)
+    if task_json.status_code != 200:
+        return None
+    return task_json.json()['task']
+
+def get_json_task_counters(hs, job_id, task_id):
+    task_url = get_task_url(hs, job_id, task_id)
+    counters_url = '%s/counters' % task_url
+    counters_json_response = session.get(counters_url)
+    return counters_json_response.json()['jobTaskCounters']['taskCounterGroup']
+
+def dump(hs, time_start=None, time_end=None):
+  
+    data = {} 
+    jobs = json.loads('{}')
+    jobs = get_json_job_list(hs, time_start, time_end)
+    for job in jobs:
+        job_id = job['id']
+        job_detail = get_json_job_detail(hs, job_id) 
+        data[job_id] = job_detail
+        
+        data[job_id]['tasks'] = {}
+        tasks = get_json_task_list(hs, job_id)
+        for task in tasks:
+            task_id = task['id']
+            task_detail = get_json_task_detail(hs, job_id, task_id)
+            data[job_id]['tasks'][task_id] = task_detail
+
+            task_counters = get_json_task_counters(hs, job_id, task_id)
+
+            aggregate_counters = {}
+            for task_counter_group in task_counters:
+                counter_group_name = task_counter_group['counterGroupName']
+                counters = {}
+                for counter in task_counter_group['counter']:
+                    counters[counter['name']] = counter['value']
+                aggregate_counters[counter_group_name] = counters
+
+            data[job_id]['tasks'][task_id]['counters'] = aggregate_counters
+
+
+    #print json.dumps(data)
+    print json.dumps(data)
+    print sys.getsizeof(data)
+    import resource
+    print  resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    print resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Job ID')
@@ -328,6 +413,8 @@ def main(argv):
                         )
 
     args = parser.parse_args()
+    hs = HistoryServer(args.host, args.port)
+    dump(hs)
     sys.exit(0)
 
 
