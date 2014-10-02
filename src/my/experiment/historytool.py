@@ -366,6 +366,18 @@ def get_json_task_counters(hs, job_id, task_id):
     counters_json_response = session.get(counters_url)
     return counters_json_response.json()['jobTaskCounters']['taskCounterGroup']
 
+def get_json_attempt_list(hs, job_id, task_id):
+    task_url = get_task_url(hs, job_id, task_id)
+    attempts_url = '%s/attempts' % task_url
+    attempts_json = session.get(attempts_url)
+    return attempts_json.json()['taskAttempts']['taskAttempt']
+
+def get_json_attempt_counters(hs, job_id, task_id, attempt_id):
+    task_url = get_task_url(hs, job_id, task_id)
+    counters_url = '%s/attempts/%s/counters' % (task_url, attempt_id)
+    counters_json = session.get(counters_url)
+    return counters_json.json()['jobTaskAttemptCounters']['taskAttemptCounterGroup']
+
 def dump(hs, time_start=None, time_end=None):
   
     data = {} 
@@ -379,12 +391,12 @@ def dump(hs, time_start=None, time_end=None):
         data[job_id]['tasks'] = {}
         tasks = get_json_task_list(hs, job_id)
         for task in tasks:
-            task_id = task['id']
-            task_detail = get_json_task_detail(hs, job_id, task_id)
-            data[job_id]['tasks'][task_id] = task_detail
+            task_id = task.pop('id')
+            data[job_id]['tasks'][task_id] = {}
+            data[job_id]['tasks'][task_id].update(task)
 
+            ''' task counters'''
             task_counters = get_json_task_counters(hs, job_id, task_id)
-
             aggregate_counters = {}
             for task_counter_group in task_counters:
                 counter_group_name = task_counter_group['counterGroupName']
@@ -392,16 +404,29 @@ def dump(hs, time_start=None, time_end=None):
                 for counter in task_counter_group['counter']:
                     counters[counter['name']] = counter['value']
                 aggregate_counters[counter_group_name] = counters
-
             data[job_id]['tasks'][task_id]['counters'] = aggregate_counters
 
+            ''' attempt counters '''
+            data[job_id]['tasks'][task_id]['taskAttempts'] = {}
+            attempts = get_json_attempt_list(hs, job_id, task_id)
+            for attempt in attempts:
+                attempt_id = attempt.pop('id')
+                data[job_id]['tasks'][task_id]['taskAttempts'][attempt_id] = {}
+                data[job_id]['tasks'][task_id]['taskAttempts'][attempt_id].update(attempt)
 
-    #print json.dumps(data)
+                attempt_counters = get_json_attempt_counters(hs, job_id, task_id, attempt_id)
+                aggregate_attempt_counters = {}
+                for attempt_counter_group in attempt_counters:
+                    attempt_counter_group_name = attempt_counter_group['counterGroupName']
+                    attempt_counters = {}
+                    for attempt_counter in attempt_counter_group['counter']:
+                        attempt_counters[attempt_counter['name']] = attempt_counter['value']
+                    aggregate_attempt_counters[attempt_counter_group_name] = attempt_counters
+                data[job_id]['tasks'][task_id]['taskAttempts'][attempt_id]['counters'] = aggregate_attempt_counters
+ 
     print json.dumps(data)
-    print sys.getsizeof(data)
-    import resource
-    print  resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    print resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+    with open("json.json", "w") as f:
+        f.write(json.dumps(data))
 
 
 def main(argv):
