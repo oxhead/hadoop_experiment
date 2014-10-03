@@ -15,7 +15,7 @@ def main(argv):
     args = parser.parse_args()
 
     cluster = config.get_cluster(args.cluster)
-    historytool.dump(cluster.getHistoryServer())
+    historytool.dump(cluster.getHistoryServer(), 'json.json')
 
 if __name__ == "__main__":
         main(sys.argv[1:])

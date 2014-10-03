@@ -378,22 +378,22 @@ def get_json_attempt_counters(hs, job_id, task_id, attempt_id):
     counters_json = session.get(counters_url)
     return counters_json.json()['jobTaskAttemptCounters']['taskAttemptCounterGroup']
 
-def dump(hs, time_start=None, time_end=None):
+def dump(hs, output_path, time_start=None, time_end=None):
   
-    data = {} 
+    data = {'jobs': {}} 
     jobs = json.loads('{}')
     jobs = get_json_job_list(hs, time_start, time_end)
     for job in jobs:
         job_id = job['id']
         job_detail = get_json_job_detail(hs, job_id) 
-        data[job_id] = job_detail
+        data['jobs'][job_id] = job_detail
         
-        data[job_id]['tasks'] = {}
+        data['jobs'][job_id]['tasks'] = {}
         tasks = get_json_task_list(hs, job_id)
         for task in tasks:
             task_id = task.pop('id')
-            data[job_id]['tasks'][task_id] = {}
-            data[job_id]['tasks'][task_id].update(task)
+            data['jobs'][job_id]['tasks'][task_id] = {}
+            data['jobs'][job_id]['tasks'][task_id].update(task)
 
             ''' task counters'''
             task_counters = get_json_task_counters(hs, job_id, task_id)
@@ -404,15 +404,15 @@ def dump(hs, time_start=None, time_end=None):
                 for counter in task_counter_group['counter']:
                     counters[counter['name']] = counter['value']
                 aggregate_counters[counter_group_name] = counters
-            data[job_id]['tasks'][task_id]['counters'] = aggregate_counters
+            data['jobs'][job_id]['tasks'][task_id]['counters'] = aggregate_counters
 
             ''' attempt counters '''
-            data[job_id]['tasks'][task_id]['taskAttempts'] = {}
+            data['jobs'][job_id]['tasks'][task_id]['taskAttempts'] = {}
             attempts = get_json_attempt_list(hs, job_id, task_id)
             for attempt in attempts:
                 attempt_id = attempt.pop('id')
-                data[job_id]['tasks'][task_id]['taskAttempts'][attempt_id] = {}
-                data[job_id]['tasks'][task_id]['taskAttempts'][attempt_id].update(attempt)
+                data['jobs'][job_id]['tasks'][task_id]['taskAttempts'][attempt_id] = {}
+                data['jobs'][job_id]['tasks'][task_id]['taskAttempts'][attempt_id].update(attempt)
 
                 attempt_counters = get_json_attempt_counters(hs, job_id, task_id, attempt_id)
                 aggregate_attempt_counters = {}
@@ -422,11 +422,10 @@ def dump(hs, time_start=None, time_end=None):
                     for attempt_counter in attempt_counter_group['counter']:
                         attempt_counters[attempt_counter['name']] = attempt_counter['value']
                     aggregate_attempt_counters[attempt_counter_group_name] = attempt_counters
-                data[job_id]['tasks'][task_id]['taskAttempts'][attempt_id]['counters'] = aggregate_attempt_counters
+                data['jobs'][job_id]['tasks'][task_id]['taskAttempts'][attempt_id]['counters'] = aggregate_attempt_counters
  
-    print json.dumps(data)
-    with open("json.json", "w") as f:
-        f.write(json.dumps(data))
+    with open(output_path, "w") as f:
+        json.dump(data, f, sort_keys=True)
 
 
 def main(argv):
