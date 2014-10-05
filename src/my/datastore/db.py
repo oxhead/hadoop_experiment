@@ -9,10 +9,11 @@ from my.datastore.base import *
 
 logger = logging.getLogger(__name__)
 
-def importJsonToDatabase(data):
+def importJsonToDatabase(data, db_path, experiment_id, description, is_completed, completion_time):
 
+    init(db_path)
     with transaction():
-        run = HadoopRun.create(id="test", description="balabala", is_completed=True, completion_time=123)
+        run = HadoopRun.create(id=experiment_id, description=description, is_completed=is_completed, completion_time=completion_time)
         for (job_id, job_value) in data['jobs'].iteritems():
             job = Job.create(
                 run=run, \

@@ -1,5 +1,6 @@
 import time
 import datetime
+import time
 import logging
 import copy
 import os
@@ -8,10 +9,14 @@ from my.experiment import hadooputil
 from my.experiment import jobutil
 from my.experiment import monitoringtool
 from my.experiment import reporttool
+from my.experiment import historytool
 from my.experiment.decorator import *
+from my.datastore import db
 from my.hadoop import config
 
-
+'''
+Test different schedulers performance
+'''
 class SchedulerExperiment():
 
     def __init__(self, setting, schedulers, job_timeline, output_dir):
@@ -143,6 +148,7 @@ class ExperimentRun():
         time.sleep(60)
         self.monitor.stop()
 
+        self.__export()
 
         self.__report()
 
@@ -151,6 +157,18 @@ class ExperimentRun():
         self.logger.info("[Time] Start  : %s" % datetime.datetime.fromtimestamp(self.time_start).strftime('%Y-%m-%d %H:%M:%S'))
         self.logger.info("[Time] End    : %s" % datetime.datetime.fromtimestamp(self.time_end).strftime('%Y-%m-%d %H:%M:%S'))
         self.logger.info("[Time] Elapsed: %s sec" % (self.time_end - self.time_start))
+
+    def __export(self):
+        self.logger.info("[History] export history data as json")
+        # the time is not accurate as on history server
+        completed_date = datetime.datetime.fromtimestamp(self.time_end).strftime('%Y%m%d%H%M%S')
+        experiment_id = "run_%s" % completed_date
+        description = "test"
+        is_completed = True
+        completion_time = self.time_end - self.time_start
+        history_json = historytool.dump(self.cluster.getHistoryServer(), time_start=self.time_start, time_end=self.time_end)
+        historytool.writeJsonToFile(history_json, "store/history_%s.json" % experiment_id)
+        db.importJsonToDatabase(history_json, "store/history.db", experiment_id, description, is_completed, completion_time)
 
     def __report(self):
         self.logger.info("[Report] Job Analysis")
@@ -193,6 +211,9 @@ class ExperimentRun():
             jobutil.clean_job(job)
 
 
+'''
+Define a Hadoop cluster
+'''
 class HadoopSetting():
 
     def __init__(self, cluster_config_path, node_config_path, conf_dir="conf", scheduler="Fifo", model="decoupled", num_nodes=1, num_storages=1, parameters={}):

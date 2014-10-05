@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 
+logger = logging.getLogger(__name__)
 
 def init(format=None, debug=False):
     sys.path.append(get_lib_path())
@@ -9,6 +10,16 @@ def init(format=None, debug=False):
     FORMAT = '%(filename)s:%(lineno)s:%(funcName)s() - %(message)s' if format is None else format
     logging.getLogger("requests").setLevel(logging.CRITICAL)
     logging.basicConfig(level=logging.DEBUG if debug else logging.INFO, format=FORMAT)
+
+def default(func):
+    FORMAT = '%(filename)s:%(lineno)s:%(funcName)s() - %(message)s'
+    logging.getLogger("requests").setLevel(logging.CRITICAL)
+    logging.basicConfig(level= logging.INFO, format=FORMAT)
+    return func
+
+def debug(func):
+    logging.basicConfig(level=logging.DEBUG)
+    return func
 
 def get_project_path():
     return os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -28,3 +39,12 @@ def get_node_config_path():
 
 def enable_debug():
     logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
+
+def log_info(msg):
+    logger.info(msg)
+
+def log_error(msg):
+    logger.error(msg)
+
+def log_debug(msg):
+    logger.debug(msg)

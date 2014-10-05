@@ -1,6 +1,6 @@
 config = {
         '10.25.*.*': {
-                'yarn.nodemanager.resource.memory-mb': '15000',
+                #'yarn.nodemanager.resource.memory-mb': '15000',
                 'yarn.scheduler.minimum-allocation-mb': '1024',
                 'JAVA_HOME': '/usr/lib/jvm/java-7-oracle',
                 'hdfs.datanode.dir': '/root/hadoop_runtime/hdfs/datanode',

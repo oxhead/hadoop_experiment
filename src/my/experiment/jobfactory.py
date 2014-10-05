@@ -25,6 +25,9 @@ def create_job(job_name, job_size, log_dir="log", map_size=1024, num_reducers=No
     return job
 
 
+'''
+Create random jobs from job list and job size list
+'''
 def create_jobs(job_list=[], job_size_list=[], num_jobs=10, map_size=1024, log_dir="log", period=10):
     """
     job_size_list : list[1GB]

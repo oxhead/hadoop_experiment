@@ -333,6 +333,7 @@ def get_json_job_list(hs, time_start=None, time_end=None):
     job_list_url = '%s/jobs' % get_query_url(hs)
     job_list_query_url = '%s?startedTimeBegin=%s&finishTimeEnd=%s' \
         % (job_list_url, time_start * 1000, time_end * 1000)
+    logger.error(job_list_query_url)
     job_list_json = session.get(job_list_query_url)
     if job_list_json.status_code != 200:
         raise Exception('Unable to get task list for job: %s', job_id)
@@ -378,7 +379,7 @@ def get_json_attempt_counters(hs, job_id, task_id, attempt_id):
     counters_json = session.get(counters_url)
     return counters_json.json()['jobTaskAttemptCounters']['taskAttemptCounterGroup']
 
-def dump(hs, output_path, time_start=None, time_end=None):
+def dump(hs, time_start=None, time_end=None):
   
     data = {'jobs': {}} 
     jobs = json.loads('{}')
@@ -423,7 +424,10 @@ def dump(hs, output_path, time_start=None, time_end=None):
                         attempt_counters[attempt_counter['name']] = attempt_counter['value']
                     aggregate_attempt_counters[attempt_counter_group_name] = attempt_counters
                 data['jobs'][job_id]['tasks'][task_id]['taskAttempts'][attempt_id]['counters'] = aggregate_attempt_counters
- 
+
+    return data
+
+def writeJsonToFile(data, output_path): 
     with open(output_path, "w") as f:
         json.dump(data, f, sort_keys=True)
 
