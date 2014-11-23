@@ -91,6 +91,7 @@ def generate_config(additional_config=None):
         "mapreduce.job.reduces": "16",
         "mapreduce.job.reduce.slowstart.completedmaps": "0.05",
         "mapreduce.reduce.shuffle.parallelcopies": "5",
+        "dfs.blocksize": "67108864",
         "dfs.replication": "3",
         "dfs.tier.enabled": "false",
         "dfs.datanode.fsdataset.volume.choosing.policy": "org.apache.hadoop.hdfs.server.datanode.fsdataset.RoundRobinVolumeChoosingPolicy",

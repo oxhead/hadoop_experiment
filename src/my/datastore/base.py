@@ -49,7 +49,7 @@ class BaseModel(Model):
         database = database_proxy
 
 class HadoopRun(BaseModel):
-    run_id = CharField(primary_key=True)
+    id = CharField(primary_key=True)
     description = TextField()
     is_completed = BooleanField()
     created_date = DateTimeField(default=datetime.datetime.now)

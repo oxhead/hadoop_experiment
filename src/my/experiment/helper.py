@@ -74,9 +74,9 @@ def get_output_dir(job_name, job_size, identifier=None):
         return "/output/%s_%s_%s" % (job_name, job_size, identifier)
 
 
-def get_log_path(job_name, job_size, identifier=None):
+def get_log_path(job_name, job_size, log_dir=None, identifier=None):
     # turnaround solution
-    log_dir = os.path.join(os.getcwd(), "log")
+    log_dir = os.path.join(os.getcwd(), "log") if log_dir is None else log_dir
     if identifier is None:
         return os.path.join(log_dir, "%s_%s.log" % (job_name, job_size))
     else:

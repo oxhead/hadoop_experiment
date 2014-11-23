@@ -63,19 +63,23 @@ class SchedulerExperiment():
 
 class ExperimentRun():
 
-    def __init__(self, job_timeline, output_dir, setting=None, upload=False, format=False, sync=False):
+    def __init__(self, job_timeline, output_dir, setting=None, upload=False, format=False, sync=False, id=None, description='N/A', export=True):
         self.output_dir = output_dir
         self.job_timeline = job_timeline
         self.setting = setting
         self.upload = upload
         self.format = format
         self.sync = sync
+        self.export = export
+        self.id = id if id is not None else datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        self.description = description
         self.time_start = None
         self.time_end = None
         self.jobs = []
 
         self.output_ganglia = "%s/ganglia" % self.output_dir
         self.output_dstat = "%s/dstat" % self.output_dir
+        self.output_history = "%s/history" % self.output_dir
 
         self.output_file = "%s/measure_imbalance.csv" % self.output_dir
         self.output_waiting_time = "%s/waiting_time.csv" % self.output_dir
@@ -148,9 +152,10 @@ class ExperimentRun():
         time.sleep(60)
         self.monitor.stop()
 
-        self.__export()
+        if self.export:
+            self.__export()
 
-        self.__report()
+        #self.__report()
 
         hadooputil.shutdown(self.cluster)
 
@@ -160,15 +165,18 @@ class ExperimentRun():
 
     def __export(self):
         self.logger.info("[History] export history data as json")
+        os.makedirs(self.output_history)
+        output_json = "%s/history.json" % self.output_history
         # the time is not accurate as on history server
-        completed_date = datetime.datetime.fromtimestamp(self.time_end).strftime('%Y%m%d%H%M%S')
-        experiment_id = "run_%s" % completed_date
-        description = "test"
+        description = self.description
         is_completed = True
         completion_time = self.time_end - self.time_start
+        self.logger.info('Export data from history server')
         history_json = historytool.dump(self.cluster.getHistoryServer(), time_start=self.time_start, time_end=self.time_end)
-        historytool.writeJsonToFile(history_json, "store/history_%s.json" % experiment_id)
-        db.importJsonToDatabase(history_json, "store/history.db", experiment_id, description, is_completed, completion_time)
+        self.logger.info('Write data as a json file')
+        historytool.writeJsonToFile(history_json, output_json)
+        self.logger.info('Write history date to database')
+        db.importJsonToDatabase(history_json, "store/history.db", self.id, description, is_completed, completion_time)
 
     def __report(self):
         self.logger.info("[Report] Job Analysis")
@@ -229,7 +237,7 @@ class HadoopSetting():
 
 class Job(object):
 
-    def __init__(self, name, size, input_dir, output_dir, log_path, returncode_path, params=None, map_size=1024, num_reducers=1):
+    def __init__(self, name, size, input_dir, output_dir, log_path, returncode_path, params=None, map_size=1024, reduce_size=2048, num_reducers=1):
         self.name = name
         self.size = size
         self.input_dir = input_dir
@@ -238,6 +246,7 @@ class Job(object):
         self.returncode_path = returncode_path
         self.params = params
         self.map_size = map_size
+        self.reduce_size = reduce_size
         self.num_reducers = num_reducers
         self.id = None
         self.status = False

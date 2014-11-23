@@ -54,5 +54,5 @@ def execute_async(cmd, output=False):
 
 
 def execute_remote(user, host, cmd, output=False):
-    remote_cmd = "ssh -t %s@%s \"%s\"" % (user, host, cmd)
+    remote_cmd = "ssh %s@%s \"%s\"" % (user, host, cmd)
     execute(remote_cmd, output)

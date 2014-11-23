@@ -12,16 +12,16 @@ from my.experiment.base import *
 from my.experiment import helper
 
 
-def create_job(job_name, job_size, log_dir="log", map_size=1024, num_reducers=None, identifier=None):
+def create_job(job_name, job_size, log_dir="log", map_size=1024, reduce_size=2048, num_reducers=None, identifier=None):
     real_size = helper.convert_unit(job_size)
     input_dir = helper.lookup_dataset(job_name, real_size)
     output_dir = helper.get_output_dir(job_name, real_size, identifier)
     num_reducers = num_reducers if num_reducers is not None else 1 if real_size < 1024 else real_size / \
         1024
-    log_path = helper.get_log_path(job_name, job_size, identifier)
+    log_path = helper.get_log_path(job_name, job_size, log_dir, identifier)
     returncode_path = helper.get_returncode_path(log_path)
     job = Job(job_name, job_size, input_dir, output_dir, log_path,
-              returncode_path, map_size=map_size, num_reducers=num_reducers)
+              returncode_path, map_size=map_size, reduce_size=reduce_size, num_reducers=num_reducers)
     return job
 
 

@@ -44,6 +44,14 @@ class Cluster(object):
                 node_list.extend(self.getMapReduceCluster().getNodes())
                 node_list.extend(self.getHDFSCluster().getNodes())
                 return list(set(node_list))
+        def isNodeManager(self, node):
+                return any(x == node for x in self.getMapReduceCluster().getNodeManagers())
+        def isDataNode(self, node):
+                return any(x == node for x in self.getHDFSCluster().getDataNodes())
+        def isResourceManager(self, node):
+                return node == self.getMapReduceCluster().getResourceManager()
+        def isNameNode(self, node):
+                return node == self.getHDFSCluster().getNameNode()
 
 
 class MapReduceCluster(object):

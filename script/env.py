@@ -46,5 +46,8 @@ def log_info(msg):
 def log_error(msg):
     logger.error(msg)
 
+def log_exception(e):
+    logger.exception(e)
+
 def log_debug(msg):
     logger.debug(msg)
