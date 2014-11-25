@@ -43,4 +43,10 @@ python2.7 script/measure_weak_scaling.py -d results/measure_weak_scaling_1c4s -s
 python2.7 script/compare_scheduler.py -d results/compare_scheduler_4c1s_n20_p15 -m decoupled -s Fifo -s ColorStorage --num_nodes 4 --num_storages 1 --num_jobs 20 --period 15
 ```
 
+### Elastic ###
 
+* Dynamically change YARN configuration
+python bin/capacity.py -p yarn.scheduler.capacity.root.queues=oxhead,chsu6,default -p yarn.scheduler.capacity.root.oxhead.capacity=60 -p yarn.scheduler.capacity.root.chsu6.capacity=20 -p yarn.scheduler.capacity.root.default.capacity=20
+
+* Simulate add/remove nodes
+python bin/node.py -n 10.25.13.31 -r namenode -a [start | stop | kill | reboot | panic]

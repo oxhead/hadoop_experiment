@@ -174,6 +174,54 @@ def generate_config_files(cluster_config_path, node_config_path, conf_dir, outpu
                 command.execute("cp %s %s" % (file_in_path, file_out_path))
 
 
+def generate_capacity_config(additional_config=None):
+    config = None
+    default_config = {
+        "yarn.scheduler.capacity.root.queues": "default",
+        "yarn.scheduler.capacity.root.capacity": "100",
+        "yarn.scheduler.capacity.root.default.capacity": "100",
+    }
+
+    return default_config if additional_config is None else additional_config
+
+    return config
+
+
+
+def generate_capacity_scheduler_files(cluster_config_path, conf_dir, output_dir, additional_config):
+
+    """
+    Generage configuration files for Capacity Scheduler.
+
+    Parameters
+    ----------
+    conf_dir : str
+    output_dir : str
+    additional_config : list
+            The element is in the form of "key=value"
+    """
+
+    config = generate_capacity_config(additional_config)
+    cluster = get_cluster(cluster_config_path)
+
+    command.execute("mkdir -p %s" % output_dir)
+
+    for node in cluster.getNodes():
+        # create directory
+        node_dir = os.path.join(output_dir, node.host)
+        command.execute("mkdir -p %s" % node_dir)
+
+        config_output_path = os.path.join(node_dir, "capacity-scheduler.xml")
+        
+        with open(config_output_path, "w") as fp:
+            fp.write('<?xml version="1.0"?>\n')
+            fp.write('<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>\n')
+            fp.write('<configuration>\n')
+            for (key, value) in config.iteritems():
+                fp.write('\t<property>\n\t\t<name>%s</name>\n\t\t<value>%s</value>\n\t</property>\n' % (key, value))
+            fp.write('</configuration>\n')
+
+
 def main(argv):
 
     parser = argparse.ArgumentParser(description='Configuration generator')

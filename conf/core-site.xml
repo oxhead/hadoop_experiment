@@ -40,4 +40,9 @@
             <value>67108864</value>
     </property>
 
+    <property>
+        <name>ipc.client.connect.max.retries</name>
+        <value>1</value>
+    </property>
+
 </configuration>

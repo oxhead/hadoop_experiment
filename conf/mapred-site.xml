@@ -128,4 +128,9 @@
         <name>mapreduce.map.output.compress.codec</name>
         <value>org.apache.hadoop.io.compress.DefaultCodec</value>
     </property>
+
+    <property>
+        <name>mapreduce.task.timeout</name>
+        <value>30000</value>
+    </property>
 </configuration>

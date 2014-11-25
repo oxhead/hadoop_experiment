@@ -99,6 +99,10 @@ class ExperimentRun():
         name = '.'.join([__name__, self.__class__.__name__])
         return logging.getLogger(name)
 
+    @property
+    def cluster(self):
+        return self.cluster
+
     def setSetting(self, setting):
         self.setting = setting
 

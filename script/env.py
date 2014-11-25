@@ -38,7 +38,7 @@ def get_node_config_path():
     return node_config_path
 
 def enable_debug():
-    logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
 
 def log_info(msg):
     logger.info(msg)

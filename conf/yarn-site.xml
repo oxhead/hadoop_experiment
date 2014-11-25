@@ -150,4 +150,8 @@
         <name>yarn.inmemory.token.interval</name>
         <value>100</value>
     </property>
+    <property>
+        <name>yarn.am.liveness-monitor.expiry-interval-ms</name>
+        <value>10000</value>
+    </property>
 </configuration>
