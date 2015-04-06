@@ -13,7 +13,16 @@ A framework to run jobs and collect data in Hadoop
 ### Basic Scripts ###
 * Generate configurations
 ```
-bin/config.py -n setting/node_config.py -p dfs.tier.enabled=true -p yarn.resourcemanager.scheduler.class=org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler
+python bin/config.py -n setting/node_config.py -p dfs.tier.enabled=true -p yarn.resourcemanager.scheduler.class=org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler
+```
+* Deploy configurations
+```
+python bin/config.py -n setting/node_config.py
+```
+
+* Format the cluster
+```
+python python bin/service.py -s all -a format
 ```
 
 ### Supported Scripts ###
