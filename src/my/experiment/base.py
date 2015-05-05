@@ -69,13 +69,6 @@ class ExperimentRun():
         self.time_start = None
         self.time_end = None
 
-        self.output_file = "%s/measure_imbalance.csv" % self.output_dir
-        self.output_waiting_time = "%s/waiting_time.csv" % self.output_dir
-        self.output_flow_timeline = "%s/flow_timeline.csv" % self.output_dir
-        self.output_task_timeline = "%s/task_timeline.csv" % self.output_dir
-        self.output_job_analysis = "%s/job_analysis.csv" % self.output_dir
-        self.output_progress_timeline = "%s/progress_timeline.csv" % self.output_dir
-    
     @property
     def logger(self):
         name = '.'.join([__name__, self.__class__.__name__])
