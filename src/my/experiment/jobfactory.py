@@ -8,8 +8,8 @@ import time
 import random
 import numpy
 
-from my.experiment.base import *
 from my.experiment import helper
+from my.experiment.base import Job
 
 
 def create_job(job_name, job_size, log_dir="log", map_size=1024, reduce_size=2048, num_reducers=None, identifier=None):

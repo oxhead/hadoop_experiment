@@ -1,3 +1,5 @@
+import re
+
 class Node(object):
         def __init__(self, host):
                 self.host = host
@@ -106,3 +108,66 @@ class HistoryServer(object):
         def __init__(self, host, port):
                 self.host = host
                 self.port = port
+
+class HadoopSetting():
+    ''' Class for Hadoop related setting
+
+    Define a Hadoop cluster class to store all configurations in one place.
+
+    Attributes:
+        cluster (dict): the cluster topology
+        config (NodeConfig): the configuration object
+        parameters (dict): the additional parameters
+        conf_dir (str): the path to Hadoop configuration template
+    '''
+
+    def __init__(self, cluster, config, parameters={}, conf_dir="conf"):
+        self.cluster = cluster
+        self.config = config
+        self.parameters = parameters
+        self.conf_dir = conf_dir
+        # special configurations
+        # set up user name
+        self.parameters['user'] = self.cluster.getUser()
+        # set up YARN server
+        self.parameters['yarn.resourcemanager.hostname'] = self.cluster.getMapReduceCluster().getResourceManager().host
+        # set up HDFS server, the ending slash is required
+        self.parameters['fs.defaultFS'] = 'hdfs://%s' % self.cluster.getHDFSCluster().getNameNode().host
+
+    def add_parameters(self, parameters):
+        self.parameters.update(parameters)
+
+    def get_config(self, host, key):
+        value = self.config.get_config(host, key)
+        if value is None:
+            value = self.parameters[key] if key in self.parameters else None
+        return value
+
+class NodeConfig(object):
+    '''A configuration object
+
+    This object supports basic regular expression.  Given a hostname key and a configuration key, it returns a value.
+    '''
+
+    def __init__(self, config):
+        self.config = config
+
+    def get_config(self, host, keyString):
+        if host in self.config:
+                return self.config[host][keyString]
+
+        for (key, value) in self.config.items():
+            pattern = re.compile(key)
+            if pattern.match(host):
+                return value[keyString]
+        return None
+
+    def get_config_pairs(self, host):
+        if host in self.config:
+                return self.config[host]
+
+        for (key, value) in self.config.items():
+            pattern = re.compile(key)
+            if pattern.match(host):
+                return value
+        return None

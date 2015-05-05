@@ -14,7 +14,7 @@ def init(format=None, debug=False):
 def default(func):
     FORMAT = '%(filename)s:%(lineno)s:%(funcName)s() - %(message)s'
     logging.getLogger("requests").setLevel(logging.CRITICAL)
-    logging.basicConfig(level= logging.INFO, format=FORMAT)
+    logging.basicConfig(level=logging.INFO, format=FORMAT)
     return func
 
 def debug(func):

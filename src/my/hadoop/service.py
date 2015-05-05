@@ -3,13 +3,11 @@ import logging
 import os
 import time
 from my.util import command
-from my.hadoop import config
-from my.hadoop.base import Node
 
 logger = logging.getLogger(__name__)
 
 # workaround for foramt
-def execute(cluster, service, action, node_config_path="setting/node_config.py"):
+def execute(setting, service, action):
     hadoop_dir = "~/hadoop"
     conf_dir = "%s/conf" % hadoop_dir
     dameon_script = "%s/sbin/hadoop-daemon.sh" % hadoop_dir
@@ -18,26 +16,25 @@ def execute(cluster, service, action, node_config_path="setting/node_config.py")
     mapreduce_script = "%s/bin/mapred" % hadoop_dir
     hdfs_script = "%s/bin/hdfs" % hadoop_dir
 
+    cluster = setting.cluster
     user = cluster.getUser()
     mapreduce = cluster.getMapReduceCluster()
     hdfs = cluster.getHDFSCluster()
     historyserver = cluster.getHistoryServer()
-
-    node_config = config.get_node_config(node_config_path)
 
     returncode_list = []
 
     if service == "all":
         service_list = ["hdfs", "mapreduce", "historyserver"] if action == "start" else ["historyserver", "mapreduce", "hdfs"]
         for service in service_list:
-            execute(cluster, service, action, node_config_path)
+            execute(setting, service, action)
         return
     elif service == "mapreduce":
         if action == "format":
             for node in hdfs.getDataNodes():
                 logger.info("[Service] %s NodeManager at %s" % (action, node.host))
                 # workaround soultion, hadoop_runtime should be configurable
-                hadoop_dirs = node_config.getConfig(node.host, "yarn.nodemanager.local-dirs")
+                hadoop_dirs = setting.get_config(node.host, "yarn.nodemanager.local-dirs")
                 for hadoop_dir in hadoop_dirs.split(","):
                         hadoop_dir = hadoop_dir.strip()
                         logger.info("\tClean %s" % hadoop_dir)
@@ -65,7 +62,7 @@ def execute(cluster, service, action, node_config_path="setting/node_config.py")
             for node in hdfs.getDataNodes():
                 logger.info("[Service] %s DataNode at %s" % (action, node.host))
                 # workaround soultion, hadoop_runtime should be configurable
-		data_dirs = node_config.getConfig(node.host, "hdfs.datanode.dir")
+		data_dirs = setting.get_config(node.host, "hdfs.datanode.dir")
 		for data_dir in data_dirs.split(","):
 			data_dir = data_dir.replace("[SSD]", "").replace("[DISK]", "").strip()
 			logger.info("\tClean %s" % data_dir)
@@ -104,7 +101,6 @@ def node_action(host, role, action, node_config_path="setting/node_config.py", u
         node_config_path: config path
     '''
 
-    node = Node(host)
     hadoop_dir = "~/hadoop"
     conf_dir = "%s/conf" % hadoop_dir
     dameon_script = "%s/sbin/hadoop-daemon.sh" % hadoop_dir
@@ -114,41 +110,42 @@ def node_action(host, role, action, node_config_path="setting/node_config.py", u
     hdfs_script = "%s/bin/hdfs" % hadoop_dir
 
     if role == "resourcemanager":
-        logger.info("[Service] %s ResourceManager at %s" % (action, node.host))
+        logger.info("[Service] %s ResourceManager at %s" % (action, host))
         cmd = "%s --config %s %s resourcemanager" % (yarn_dameon_script, conf_dir, action)
-        command.execute_remote(user, node.host, cmd)
+        command.execute_remote(user, host, cmd)
     elif role == "nodemanager":
-        logger.info("[Service] %s NodeManager at %s" % (action, node.host))
+        logger.info("[Service] %s NodeManager at %s" % (action, host))
         if action == 'start' or action == 'stop':
             cmd = "%s --config %s %s nodemanager" % (yarn_dameon_script, conf_dir, action)
-            command.execute_remote(user, node.host, cmd)
+            command.execute_remote(user, host, cmd)
         elif action == 'kill':
             cmd = "pkill -f 'org.apache.*.NodeManager'"
-            command.execute_remote(user, node.host, cmd)
+            command.execute_remote(user, host, cmd)
         elif action == 'reboot':
             cmd = 'sudo reboot -f'
-            command.execute_remote(user, node.host, cmd)
+            command.execute_remote(user, host, cmd)
         elif action == 'panic':
             cmd = 'sudo bash -c "echo c > /proc/sysrq-trigger"'
-            command.execute_remote(user, node.host, cmd)
+            command.execute_remote(user, host, cmd)
             
     elif role == "namenode":
-        logger.info("[Service] %s NameNode at %s" % (action, node.host))
+        logger.info("[Service] %s NameNode at %s" % (action, host))
         cmd = "%s --config %s --script %s %s namenode" % (dameon_script, conf_dir, hdfs_script, action)
         # start/stop NameNode
-        command.execute_remote(user, node.host, cmd)
+        command.execute_remote(user, host, cmd)
     elif role == "datanode":
-        logger.info("[Service] %s DataNode at %s" % (action, node.host))
+        logger.info("[Service] %s DataNode at %s" % (action, host))
         cmd = "%s --config %s --script %s %s datanode" % (dameon_script, conf_dir, hdfs_script, action)
-        command.execute_remote(user, node.host, cmd)
+        command.execute_remote(user, host, cmd)
     
-def deploy(cluster, conf_dir, included_node=None):
-        for node in cluster.getNodes():
+def deploy(setting, conf_dir, included_node=None):
+        for node in setting.cluster.getNodes():
                 if included_node is None or node.host == included_node.host: 
                     logger.info("Deploy to %s" % node.host)
-                    command.execute_remote(cluster.user, node.host, "mkdir -p ~/hadoop/conf")
+                    command.execute_remote(setting.cluster.user, node.host, "mkdir -p ~/hadoop/conf")
                     # workaround for path
-                    command.execute("scp -r %s/%s/* %s@%s:~/hadoop/conf" % (conf_dir, node.host, cluster.user, node.host))
+                    # ex. myconf/1.2.3.4
+                    command.execute("scp -r %s/%s/* %s@%s:~/hadoop/conf" % (conf_dir, node.host, setting.cluster.user, node.host))
 
 def reload_yarn(cluster):
     hadoop_dir = "~/hadoop"

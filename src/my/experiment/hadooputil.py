@@ -3,7 +3,7 @@ import random
 import logging
 
 from my.hadoop import service
-from my.hadoop import config
+from my.hadoop import configtool
 from my.experiment import helper
 from my.util import command
 
@@ -12,53 +12,31 @@ logger = logging.getLogger(__name__)
 
 def switch_config(setting, format=False):
 
-        cluster_config_path = setting.cluster_config_path
-        node_config_path = setting.node_config_path
-        scheduler = setting.scheduler
-
         logger.info("Switch Hadoop cofiguration")
-        logger.info("Cluster: %s", cluster_config_path)
-        logger.info("Node: %s", node_config_path)
-        logger.info("Scheduer: %s", scheduler)
-
-        conf_dir = helper.get_conf_dir()
-        conf_generated = "myconf"
-
-        cluster_config = config.get_cluster(cluster_config_path)
-        (scheduler_class,
-         scheduler_parameter) = helper.lookup_scheduler(scheduler)
-
-        addtional_config = {
-            'yarn.resourcemanager.scheduler.class': scheduler_class,
-            'yarn.scheduler.flow.assignment.model': scheduler_parameter,
-        }
-
-        addtional_config = dict(setting.parameters.items() + addtional_config.items())
-        logger.debug("additional paremeters: %s", addtional_config)
 
         logger.info("Status: stop Hadoop service")
-        service.execute(cluster_config, "all", "stop")
+        service.execute(setting, "all", "stop")
 
-        config.generate_config_files(
-            cluster_config_path, node_config_path, conf_dir, conf_generated,
-            addtional_config)
+
+        conf_generated = "myconf"
+        configtool.generate_config_files(setting, conf_generated)
 
         logger.info("Status: deploy Hadoop service")
-        service.deploy(cluster_config, conf_generated)
+        service.deploy(setting, conf_generated)
 
         if format:
             logger.info("Status: format HDFS storage")
-            service.execute(cluster_config, "hdfs", "format", setting.node_config_path)
+            service.execute(setting, "hdfs", "format")
 
         logger.info("Status: start Hadoop service")
-        service.execute(cluster_config, "all", "start")
+        service.execute(setting, "all", "start")
 
         logger.info("Status: completed configuring Hadoop")
 
 
-def shutdown(cluster):
+def shutdown(setting):
     logger.info("Status: shutdown Hadoop service")
-    service.execute(cluster, "all", "stop")
+    service.execute(setting, "all", "stop")
 
 
 def prepare_data(cluster, jobs):

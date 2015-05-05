@@ -131,6 +131,18 @@
 
     <property>
         <name>mapreduce.task.timeout</name>
-        <value>30000</value>
+        <value>0</value>
+    </property>
+    <property>
+        <name>yarn.app.mapreduce.client.max-retries</name>
+        <value>100</value>
+    </property>
+    <property>
+        <name>mapreduce.am.max-attempts</name>
+        <value>200</value>
+    </property>
+    <property>
+        <name>yarn.app.mapreduce.client-am.ipc.max-retries-on-timeouts</name>
+        <value>150</value>
     </property>
 </configuration>

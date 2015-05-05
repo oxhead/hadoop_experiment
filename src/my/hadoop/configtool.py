@@ -1,7 +1,6 @@
 import os
 import imp
 import argparse
-import re
 import logging
 import copy
 
@@ -10,33 +9,39 @@ from my.util import command
 
 logger = logging.getLogger(__name__)
 
-class NodeConfig(object):
+def create_cluster(resourcemanager, nodemanagers, namenode, datanodes, historyserver=None, user="hadoop"):
+    '''A convenient function to create a Cluster object
+    Args:
+        resourcemanager (str): the hostname of the resourcemaanger
+        nodemanagers (list): the hostname list of nodemanagers
+        namenode (str): the hostname of the namenode
+        datanodes (list): the hostname list of datanodes
+        historyserver (str): the hostname of the historyserver with default value equal to resourcemanager
+        user (str): the user name of the Hadoop cluster
+    '''
+    config = {}
 
-    def __init__(self, config):
-        self.config = config
+    mapreduce = MapReduceCluster()
+    mapreduce.setResourceManager(Node(resourcemanager))
+    for host in nodemanagers:
+        mapreduce.addNodeManager(Node(host))
 
-    def getConfig(self, host, keyString):
-	if host in self.config:
-		return self.config[host][keyString]
+    hdfs = HDFSCluster()
+    hdfs.setNameNode(Node(namenode))
+    for host in datanodes:
+        hdfs.addDataNode(Node(host))
 
-        for (key, value) in self.config.items():
-            pattern = re.compile(key)
-            if pattern.match(host):
-                return value[keyString]
-        return None
+    historyserver = None
+    if historyserver is None:
+       historyserver = HistoryServer(resourcemanager, "19888")
+    else:
+        hs_host, hs_port = historyserver.split(":")
+        historyserver = HistoryServer(hs_host, hs_port)
 
-    def getConfigPairs(self, host):
-	if host in self.config:
-		return self.config[host]
+    cluster = Cluster(user, mapreduce, hdfs, historyserver)
+    return cluster
 
-	for (key, value) in self.config.items():
-            pattern = re.compile(key)
-            if pattern.match(host):
-		return value
-        return None
-
-
-def get_cluster(config_path):
+def parse_cluster_config(config_path):
 
     config = getConfigObject(config_path)
 
@@ -60,21 +65,32 @@ def get_cluster(config_path):
     return cluster
 
 
-def get_node_config(config_path):
+def parse_node_config(config_path):
     config = getConfigObject(config_path)
     node_config = NodeConfig(config['config'])
     return node_config
 
 
 def getConfigObject(config_path):
+    '''Create config object from a file
+    '''
     config_object = {}
     execfile(config_path, config_object)
     return config_object
 
 
 def generate_config(additional_config=None):
-    config = None
-    default_config = {
+    """
+    Return a config object with default values and optional additional values.
+
+    Args:
+        additional_config (dict) : extral configurations
+    Returns:
+        a dict object with merged configurations.
+    """
+
+    # Loaded with default values
+    config = {
         "io.file.buffer.size": "65536",
         "fs.defaultFS": "file:///nfs_power2/",
         "yarn.nodemanager.resource.memory-mb": "66000",
@@ -98,7 +114,7 @@ def generate_config(additional_config=None):
 
     }
     if additional_config is not None and type(additional_config) is dict:
-        config = dict(default_config.items() + additional_config.items())
+        config.update(additional_config)
 
     return config
 
@@ -116,51 +132,31 @@ def parse_config(parameter_list):
     return config
 
 
-def generate_config_files(cluster_config_path, node_config_path, conf_dir, output_dir, additional_config):
+def generate_config_files(setting, output_dir='myconf'):
     """
     Generage configuration files for Hadoop.
 
-    Parameters
-    ----------
-    cluster : Cluster
-        The cluster info
-    conf_dir : str
-    output_dir : str
-    parameter_list : list
-            The element is in the form of "key=value"
+    Args:
+        setting (HadoopSetting): the Hadoop setting
+        output_dir (str): the path to write files
     """
-
-    config = generate_config(additional_config)
-
-    cluster = get_cluster(cluster_config_path)
-    mapreduce = cluster.getMapReduceCluster()
-    hdfs = cluster.getHDFSCluster()
-
-    node_config = get_node_config(node_config_path)
-
-    # set up user name
-    config['user'] = cluster.getUser()
-    # set up YARN server
-    config['yarn.resourcemanager.hostname'] = mapreduce.getResourceManager().host
-    # set up HDFS server, the ending slash is required
-    config['fs.defaultFS'] = 'hdfs://%s' % hdfs.getNameNode().host
 
     command.execute("mkdir -p %s" % output_dir)
 
-    for node in cluster.getNodes():
+    for node in setting.cluster.getNodes():
         # create directory
         node_dir = os.path.join(output_dir, node.host)
         command.execute("mkdir -p %s" % node_dir)
         
-	config_individual = copy.copy(config)
-        # add node-specific configuations
-        for (key, value) in node_config.getConfigPairs(node.host).items():
+        # create node-specific configurations
+	config_individual = generate_config(setting.parameters)
+        for (key, value) in setting.config.get_config_pairs(node.host).items():
             config_individual[key] = value
 
-        for f in os.listdir(conf_dir):
-            file_in_path = os.path.join(conf_dir, f)
+        # create configuration files
+        for f in os.listdir(setting.conf_dir):
+            file_in_path = os.path.join(setting.conf_dir, f)
             file_out_path = os.path.join(node_dir, f)
-            # node specific configuration
 
             if "xml" in f or "sh" in f:
                 with open(file_in_path, "r") as fp_in:
@@ -221,6 +217,34 @@ def generate_capacity_scheduler_files(cluster_config_path, conf_dir, output_dir,
                 fp.write('\t<property>\n\t\t<name>%s</name>\n\t\t<value>%s</value>\n\t</property>\n' % (key, value))
             fp.write('</configuration>\n')
 
+def lookup_scheduler(scheduler):
+    scheduler_class = "org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler"
+    scheduler_parameter = "yarn.scheduler.flow.assignment.model=Flow"
+    if scheduler.lower() == "fifo":
+        scheduler_class = "org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler"
+    elif scheduler.lower() == "fair":
+        scheduler_class = "org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler"
+    elif scheduler.lower() == "capacity":
+        scheduler_class = "org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler"
+    elif scheduler.lower() == "flow":
+        scheduler_class = "org.apache.hadoop.yarn.server.resourcemanager.scheduler.flow.FlowScheduler"
+        scheduler_parameter = "Flow"
+    elif scheduler.lower() == "balancing":
+        scheduler_class = "org.apache.hadoop.yarn.server.resourcemanager.scheduler.flow.FlowScheduler"
+        scheduler_parameter = "Balancing"
+    elif scheduler.lower() == "color":
+        scheduler_class = "org.apache.hadoop.yarn.server.resourcemanager.scheduler.flow.FlowScheduler"
+        scheduler_parameter = "Color"
+    elif scheduler.lower() == "colorstorage":
+        scheduler_class = "org.apache.hadoop.yarn.server.resourcemanager.scheduler.flow.FlowScheduler"
+        scheduler_parameter = "ColorStorage"
+    return (scheduler_class, scheduler_parameter)
+
+def set_scheduler(parameters, scheduler):
+    (scheduler_class, scheduler_parameter) = lookup_scheduler(scheduler)
+    parameters['yarn.resourcemanager.scheduler.class'] = scheduler_class
+    parameters['yarn.scheduler.flow.assignment.model'] = scheduler_parameter #only for flow scheduler
+    return parameters
 
 def main(argv):
 

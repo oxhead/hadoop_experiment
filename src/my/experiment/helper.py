@@ -2,8 +2,6 @@ import os
 import time
 import datetime
 
-from my.experiment.base import *
-
 def lookup_scheduler(scheduler):
     scheduler_class = "org.apache.hadoop.yarn.server.resourcemanager.scheduler.fifo.FifoScheduler"
     scheduler_parameter = "yarn.scheduler.flow.assignment.model=Flow"
@@ -89,7 +87,7 @@ def get_dataset_dir():
     return "/dataset"
 
 def get_dataset_source_dir():
-    return "/dataset"
+    return "/mnt/dataset"
 
 def get_dataset_name(job_name):
     dataset_name = None

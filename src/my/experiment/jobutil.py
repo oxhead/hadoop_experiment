@@ -9,9 +9,10 @@ import tempfile
 import datetime
 import time
 import logging
+import json
 
-from my.util import command
 from my.experiment import helper
+from my.util import command
 
 logger = logging.getLogger(__name__)
 
@@ -143,4 +144,4 @@ def wait_completion(job_list):
 def clean_job(job):
     hadoop_dir = helper.get_hadoop_dir()
     cmd = "%s/bin/hadoop dfs -rm -r %s" % (hadoop_dir, job.output_dir)
-    c.ommand.execute(cmd)
+    command.execute(cmd)

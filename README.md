@@ -59,3 +59,10 @@ python bin/capacity.py -p yarn.scheduler.capacity.root.queues=oxhead,chsu6,defau
 
 * Simulate add/remove nodes
 python bin/node.py -n 10.25.13.31 -r namenode -a [start | stop | kill | reboot | panic]
+
+### History ###
+
+* Console Query
+python bin/history.py
+
+  * Job.select().where(Job.name == "")

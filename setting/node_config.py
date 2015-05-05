@@ -5,7 +5,7 @@ config = {
                 'JAVA_HOME': '/usr/lib/jvm/java-7-oracle',
                 'hdfs.datanode.dir': '/root/hadoop_runtime/hdfs/datanode',
                 'hadoop.runtime.dir': '/root/hadoop_runtime',
-                'dfs.replication': '3',
+                'dfs.replication': '1',
                 'mapreduce.cluster.local.dir': '/root/hadoop_runtime/cluster',
                 'yarn.nodemanager.local-dirs': '/root/hadoop_runtime/yarn/local',
 	},

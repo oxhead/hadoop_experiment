@@ -36,7 +36,6 @@ def execute(cmd, output=False):
     logger.debug(cmd)
     retcode = -1
     if output:
-        print cmd
         retcode = os.system("%s" % cmd)
     else:
         retcode = os.system("%s > /dev/null 2>&1" % cmd)

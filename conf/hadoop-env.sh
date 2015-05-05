@@ -25,11 +25,11 @@
 
 # Customized sturcture
 #ROOT_DIR=/home/${user}
-#export HADOOP_HOME=$ROOT_DIR/hadoop
+export HADOOP_HOME=$ROOT_DIR/hadoop
 #export HADOOP_MAPRED_HOME=$HADOOP_HOME
 #export HADOOP_COMMON_HOME=$HADOOP_HOME
 #export HADOOP_HDFS_HOME=$HADOOP_HOME
-#export YARN_HOME=$HADOOP_HOME
+export YARN_HOME=$HADOOP_HOME
 #export HADOOP_CONF_DIR=$HADOOP_HOME/conf
 #export HADOOP_LOG_DIR=$HADOOP_HOME/logs
 
