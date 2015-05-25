@@ -31,7 +31,7 @@ def measure(model, schedulers, num_nodes, num_storages, submit_times, submit_rat
     parameters = {
         'mapreduce.job.reduce.slowstart.completedmaps': '0.05',
         'dfs.replication': '1',
-        'dfs.blocksize': '64m'
+        'dfs.blocksize': '64m',
     }
     io_buffer = '1048576'
     memory = '16600'
@@ -40,7 +40,7 @@ def measure(model, schedulers, num_nodes, num_storages, submit_times, submit_rat
     configtool.set_scheduler(parameters, scheduler)
 
     # Hadoop setting
-    num_computing = 1
+    num_computing = 4
     num_storage = 2
     cluster = build_cluster(num_computing, num_storage)
     config = configtool.parse_node_config("setting/node_config.py")
@@ -48,9 +48,10 @@ def measure(model, schedulers, num_nodes, num_storages, submit_times, submit_rat
 
     # Experiment and job related setting
     job_list = ['terasort', 'grep', 'wordcount']
+    #job_list = ['grep']
     #job_size_list = ["64MB", "128MB", "256MB", "512MB", "1GB", "2GB"]
-    job_size_list = ["256MB", "512MB"]
-    num_jobs = 1
+    job_size_list = ["128MB", "256MB", "512MB", "1GB", "2GB"]
+    num_jobs = 40
     period = 360
 
     # Initializing Experiment

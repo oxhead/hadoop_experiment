@@ -93,10 +93,12 @@ class Task(BaseModel):
 class TaskAttempt(BaseModel):
     task = ForeignKeyField(Task, related_name='task')
     id = CharField(primary_key=True)
-    state = DateTimeField()
+    state = CharField()
     type = CharField()
     start_time = DateTimeField()
     finish_time = DateTimeField()
+    shuffle_finish_time = DateTimeField(null=True)
+    merge_finish_time = DateTimeField(null=True)
     elapsed_time = IntegerField()
     assigned_container_id = CharField()
     node_http_address = CharField()

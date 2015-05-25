@@ -59,7 +59,7 @@ class ExperimentRun():
         self.hadoop_setting = hadoop_setting
         self.job_timeline = job_timeline
         self.output_dir = output_dir
-        self.cluster = hadoop_setting.cluster
+        #self.cluster = hadoop_setting.cluster
         self.upload = upload
         self.format = format
         self.sync = sync
@@ -73,16 +73,6 @@ class ExperimentRun():
     def logger(self):
         name = '.'.join([__name__, self.__class__.__name__])
         return logging.getLogger(name)
-
-    @property
-    def cluster(self):
-        return self.cluster
-
-    def setSetting(self, hadoop_setting):
-        self.hadoop_setting = hadoop_setting
-
-    def getJobTimeline(self):
-        return self.job_timeline
 
 class Job(object):
 

@@ -66,9 +66,9 @@ class Controller():
         hadooputil.switch_config(self.experiment.hadoop_setting, self.experiment.format)
         time.sleep(60)
         if self.experiment.upload:
-            hadooputil.prepare_data(self.experiment.cluster, self.jobs)
+            hadooputil.prepare_data(self.experiment.hadoop_setting.cluster, self.jobs)
 
-        self.monitor = monitoringtool.Monitor(self.experiment.cluster, self.get_path('dstat'))
+        self.monitor = monitoringtool.Monitor(self.experiment.hadoop_setting.cluster, self.get_path('dstat'))
 
     def run(self):
         self.init()
@@ -131,7 +131,7 @@ class Controller():
         is_completed = True
         completion_time = self.time_end - self.time_start
         self.logger.info('Export data from history server')
-        history_json = historytool.dump(self.experiment.cluster.getHistoryServer(), time_start=self.time_start, time_end=self.time_end)
+        history_json = historytool.dump(self.experiment.hadoop_setting.cluster.getHistoryServer(), time_start=self.time_start, time_end=self.time_end)
         self.logger.info('Write data as a json file')
         historytool.writeJsonToFile(history_json, output_json)
         self.logger.info('Write history date to database')
@@ -151,31 +151,31 @@ class Controller():
         output_progress_timeline = "%s/progress_timeline.csv" % experiment.self.output_dir
 
         try:
-            reporttool.report_job_analysis(self.experiment.cluster, self.jobs, output_job_analysis)
+            reporttool.report_job_analysis(self.experiment.hadoop_setting.cluster, self.jobs, output_job_analysis)
         except Exception as e:
             logging.exception("Unable to create job report")
 
         self.logger.info("[Report] Waiting time")
         try:
-            reporttool.report_waiting_time(self.experiment.cluster, self.jobs, output_waiting_time)
+            reporttool.report_waiting_time(self.experiment.hadoop_setting.cluster, self.jobs, output_waiting_time)
         except Exception as e:
             logging.exception("Unable to create waiting time report")
 
         self.logger.info("[Report] Task timeline")
         try:
-            reporttool.report_task_timeline(self.experiment.cluster, self.jobs, output_task_timeline)
+            reporttool.report_task_timeline(self.experiment.hadoop_setting.cluster, self.jobs, output_task_timeline)
         except Exception as e:
             logging.exception("Unable to create task timeline report")
 
         self.logger.info("[Report] Flow timeline")
         try:
-            reporttool.report_flow_timeline(self.experiment.cluster, self.jobs, output_flow_timeline)
+            reporttool.report_flow_timeline(self.experiment.hadoop_setting.cluster, self.jobs, output_flow_timeline)
         except Exception as e:
             logging.exception("Unable to create flow timeline report")
 
         self.logger.info("[Report] Progress Analysis")
         try:
-            reporttool.report_progress_timeline(self.experiment.cluster, self.jobs, output_progress_timeline)
+            reporttool.report_progress_timeline(self.experiment.hadoop_setting.cluster, self.jobs, output_progress_timeline)
         except Exception, e:
             logging.exception("Unable to create progress report")
 

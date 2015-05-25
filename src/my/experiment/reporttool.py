@@ -112,6 +112,9 @@ def report_job_analysis(cluster, job_list, output_file):
 
 
 def report_waiting_time(cluster, job_list, output_file):
+    '''
+       This requires modification in Hadoop of adding a counter to record wait time
+    '''
     hs = cluster.getHistoryServer()
 
     f = open(output_file, "w")

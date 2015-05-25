@@ -13,8 +13,9 @@ def importJsonToDatabase(data, db_path, experiment_id, description, is_completed
 
     init(db_path)
     with transaction():
+        print(experiment_id, description)
         run = HadoopRun.create(id=experiment_id, description=description, is_completed=is_completed, completion_time=completion_time)
-        for (job_id, job_value) in data['jobs'].iteritems():
+        for (job_id, job_value) in iter(data['jobs'].items()):
             job = Job.create(
                 run=run, \
                 id=job_id, \
@@ -41,7 +42,7 @@ def importJsonToDatabase(data, db_path, experiment_id, description, is_completed
                 killed_reduce_attempts=job_value['killedReduceAttempts']
             )
 
-            for (task_id, task_value) in job_value['tasks'].iteritems():
+            for (task_id, task_value) in iter(job_value['tasks'].items()):
                 task = Task.create(
                    job=job, \
                    id=task_id, \
@@ -54,18 +55,20 @@ def importJsonToDatabase(data, db_path, experiment_id, description, is_completed
                 )
 
                 ''' insert task counters'''
-                for (counter_group_name, counter_groups) in task_value['counters'].iteritems():
+                for (counter_group_name, counter_groups) in iter(task_value['counters'].items()):
                     if not CounterGroup.select().where(CounterGroup.name == counter_group_name).exists():
                         CounterGroup.create(name=counter_group_name) 
                     counter_group = CounterGroup.get(CounterGroup.name == counter_group_name)
 
-                    for (counter_name, value) in counter_groups.iteritems():
+                    for (counter_name, value) in iter(counter_groups.items()):
                         if not Counter.select().where(Counter.name == counter_name, Counter.group == counter_group).exists():
                             Counter.create(name=counter_name, group=counter_group)
                         counter = Counter.get(Counter.name == counter_name, Counter.group == counter_group)
                         TaskCounterRecord.create(task=task, counter=counter, value=value)
 
-                for (attempt_id, attempt_value) in task_value['taskAttempts'].iteritems():
+                for (attempt_id, attempt_value) in iter(task_value['taskAttempts'].items()):
+                    shuffle_finish_time = attempt_value['shuffleFinishTime'] if attempt_value['type'].lower() == "reduce" else None
+                    merge_finish_time = attempt_value['mergeFinishTime'] if attempt_value['type'].lower() == "reduce" else None
                     attempt = TaskAttempt.create(
                         task=task, \
                         id=attempt_id, \
@@ -73,17 +76,19 @@ def importJsonToDatabase(data, db_path, experiment_id, description, is_completed
                         type=attempt_value['type'], \
                         start_time=attempt_value['startTime'], \
                         finish_time=attempt_value['finishTime'], \
+                        shuffle_finish_time=shuffle_finish_time, \
+                        merge_finish_time=merge_finish_time, \
                         elapsed_time=attempt_value['elapsedTime'], \
                         assigned_container_id=attempt_value['assignedContainerId'], \
                         node_http_address=attempt_value['nodeHttpAddress'], \
                         rack=attempt_value['rack'] 
                     )
 
-                    for (attempt_counter_group_name, attempt_counter_groups) in attempt_value['counters'].iteritems():
+                    for (attempt_counter_group_name, attempt_counter_groups) in iter(attempt_value['counters'].items()):
                         if not CounterGroup.select().where(CounterGroup.name == attempt_counter_group_name).exists():
                             CounterGroup.create(name=attempt_counter_group_name)
                         attempt_counter_group = CounterGroup.get(CounterGroup.name == attempt_counter_group_name)
-                        for (attempt_counter_name, attempt_value) in attempt_counter_groups.iteritems():
+                        for (attempt_counter_name, attempt_value) in iter(attempt_counter_groups.items()):
                             if not Counter.select().where(Counter.name == attempt_counter_name, Counter.group.contains(attempt_counter_group_name)).exists():
                                 Counter.create(name=attempt_counter_name, group=attempt_counter_group)
                             attempt_counter = Counter.get(Counter.name == attempt_counter_name, Counter.group.contains(attempt_counter_group_name))
