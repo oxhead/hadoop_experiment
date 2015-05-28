@@ -24,11 +24,11 @@
     </property>
     <property>
         <name>yarn.resourcemanager.webapp.address</name>
-        <value>0.0.0.0:18088</value>
+        <value>${yarn.resourcemanager.hostname}:18088</value>
     </property>
     <property>
         <name>yarn.web-proxy.address</name>
-        <value>0.0.0.0:18089</value>
+        <value>${yarn.resourcemanager.hostname}:18089</value>
     </property>
     <property>
         <name>yarn.resourcemanager.resource-tracker.address</name>
